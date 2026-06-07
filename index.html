@@ -178,6 +178,8 @@
   .legend .lt{color:var(--ink-dim);margin-bottom:7px;letter-spacing:.06em}
   .legend .ki{display:flex;align-items:center;gap:7px;margin-top:5px;color:var(--ink-soft)}
   .legend .ki svg{flex-shrink:0;width:24px;height:6px;display:block}
+  .legend .ki .rl-solid{flex-shrink:0;width:24px;height:0;border-top:3px solid #e8e6ee;display:inline-block}
+  .legend .ki .rl-dash{flex-shrink:0;width:24px;height:0;border-top:2px dashed #e8e6ee;display:inline-block}
   .legend .sw{width:22px;height:4px;border-radius:2px;flex-shrink:0;display:inline-block}
 
   .node circle{cursor:pointer;transition:filter .15s}
@@ -393,8 +395,8 @@
         <div id="legendEmo"></div>
         <div class="ki" style="color:var(--ink-dim)">无线条 = 不认识</div>
         <div class="lt" style="margin:9px 0 4px">伦理关系</div>
-        <div class="ki"><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#e8e6ee" stroke-width="3"/></svg>血缘亲属（实线）</div>
-        <div class="ki"><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#e8e6ee" stroke-width="2" stroke-dasharray="5,4"/></svg>非血缘（虚线）</div>
+        <div class="ki"><i class="rl-solid"></i>血缘亲属（实线）</div>
+        <div class="ki"><i class="rl-dash"></i>非血缘（虚线）</div>
       </div>
     </div>
   </div>
