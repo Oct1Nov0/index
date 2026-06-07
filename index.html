@@ -176,7 +176,7 @@
   .legend-body{padding:11px 14px}
   .legend.min .legend-body{display:none}
   .legend .lt{color:var(--ink-dim);margin-bottom:7px;letter-spacing:.06em}
-  .legend .ki{display:flex;align-items:center;gap:7px;margin-top:5px;color:var(--ink-soft)}
+  .legend .ki{display:flex;align-items:center;gap:7px;margin-top:5px;color:var(--ink-soft);flex-wrap:wrap}
   .legend .ki svg{flex-shrink:0}
   .legend .sw{width:22px;height:4px;border-radius:2px;flex-shrink:0;display:inline-block}
 
@@ -1373,6 +1373,7 @@ function renderGraph(){
 }
 let dragId=null;
 let dragMoved=false;
+let panStart=null;
 function evPoint(e){
   if(e.touches&&e.touches.length)return{clientX:e.touches[0].clientX,clientY:e.touches[0].clientY};
   if(e.changedTouches&&e.changedTouches.length)return{clientX:e.changedTouches[0].clientX,clientY:e.changedTouches[0].clientY};
@@ -1381,13 +1382,24 @@ function evPoint(e){
 function svgPoint(e){const svg=document.getElementById('svg');const r=svg.getBoundingClientRect();
   const vb=(svg.getAttribute('viewBox')||'0 0 1000 600').split(/\s+/).map(Number);const pt=evPoint(e);
   return{x:vb[0]+(pt.clientX-r.left)/r.width*vb[2], y:vb[1]+(pt.clientY-r.top)/r.height*vb[3]};}
+function startPan(e){
+  if(dragId)return;
+  const pt=evPoint(e);
+  panStart={x:pt.clientX,y:pt.clientY,vb:(document.getElementById('svg').getAttribute('viewBox')||'0 0 1000 600').split(/\s+/).map(Number)};
+}
+(function bindPan(){
+  const svg=document.getElementById('svg');
+  if(!svg)return;
+  svg.addEventListener('mousedown',startPan);
+  svg.addEventListener('touchstart',startPan,{passive:false});
+})();
 function startDrag(e,id){e.preventDefault();e.stopPropagation();dragId=id;dragMoved=false;const n=nodes.find(x=>x.id===id);if(n)n.dragging=true;
   document.getElementById('svg').classList.add('dragging');}
-function moveDrag(e){if(!dragId)return;dragMoved=true;const pt=svgPoint(e);
+function moveDrag(e){if(!dragId){if(!panStart)return;const svg=document.getElementById('svg');const r=svg.getBoundingClientRect();const pt=evPoint(e);const vb=panStart.vb;const dx=(pt.clientX-panStart.x)/r.width*vb[2];const dy=(pt.clientY-panStart.y)/r.height*vb[3];svg.setAttribute('viewBox',`${vb[0]-dx} ${vb[1]-dy} ${vb[2]} ${vb[3]}`);if(e.cancelable)e.preventDefault();return;}dragMoved=true;const pt=svgPoint(e);
   const n=nodes.find(x=>x.id===dragId);if(n){n.x=pt.x;n.y=pt.y;n.vx=0;n.vy=0;renderPositions();}
   if(e.cancelable)e.preventDefault();}
 function endDrag(){if(dragId){const n=nodes.find(x=>x.id===dragId);if(n)n.dragging=false;}
-  dragId=null;document.getElementById('svg').classList.remove('dragging');}
+  dragId=null;panStart=null;document.getElementById('svg').classList.remove('dragging');}
 document.addEventListener('mousemove',moveDrag);
 document.addEventListener('mouseup',endDrag);
 document.addEventListener('touchmove',moveDrag,{passive:false});
