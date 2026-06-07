@@ -382,7 +382,7 @@
       <button class="btn sm" onclick="graphZoom(1)" title="放大图谱主体">＋</button>
       <button class="btn sm" onclick="resetGraphZoom()" title="重置图谱主体比例">1:1</button>
     </div>
-    <svg id="svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet"></svg>
+    <svg id="svg" viewBox="0 0 1000 600" preserveAspectRatio="none"></svg>
     <div class="legend" id="legend">
       <div class="legend-bar" id="legendBar">
         <span class="legend-title">图例</span>
@@ -1360,7 +1360,7 @@ function renderGraph(){
   svg.querySelectorAll('.node').forEach(g=>{
     const id=g.dataset.id;
     g.querySelectorAll('circle')[g.querySelectorAll('circle').length-1].onclick=(e)=>{
-      e.stopPropagation();selPerson=selPerson===id?null:id;switchTab('people');renderPeople();
+      e.stopPropagation();if(dragMoved){dragMoved=false;return;}selPerson=selPerson===id?null:id;switchTab('people');renderPeople();
       if(isMobile()){const sb=document.getElementById('sidebar');sb.classList.add('sheet-open');const h=document.getElementById('sheetHandle');if(h)h.classList.add('hide');}
     };
     g.onmousedown=(e)=>startDrag(e,id);
@@ -1372,17 +1372,18 @@ function renderGraph(){
   else{nb.style.display='none';nb.innerHTML='';}
 }
 let dragId=null;
+let dragMoved=false;
 function evPoint(e){
   if(e.touches&&e.touches.length)return{clientX:e.touches[0].clientX,clientY:e.touches[0].clientY};
   if(e.changedTouches&&e.changedTouches.length)return{clientX:e.changedTouches[0].clientX,clientY:e.changedTouches[0].clientY};
   return{clientX:e.clientX,clientY:e.clientY};
 }
 function svgPoint(e){const svg=document.getElementById('svg');const r=svg.getBoundingClientRect();
-  const vb=svg.viewBox.baseVal;const pt=evPoint(e);
-  return{x:vb.x+(pt.clientX-r.left)/r.width*vb.width, y:vb.y+(pt.clientY-r.top)/r.height*vb.height};}
-function startDrag(e,id){e.preventDefault();dragId=id;const n=nodes.find(x=>x.id===id);if(n)n.dragging=true;
+  const vb=(svg.getAttribute('viewBox')||'0 0 1000 600').split(/\s+/).map(Number);const pt=evPoint(e);
+  return{x:vb[0]+(pt.clientX-r.left)/r.width*vb[2], y:vb[1]+(pt.clientY-r.top)/r.height*vb[3]};}
+function startDrag(e,id){e.preventDefault();e.stopPropagation();dragId=id;dragMoved=false;const n=nodes.find(x=>x.id===id);if(n)n.dragging=true;
   document.getElementById('svg').classList.add('dragging');}
-function moveDrag(e){if(!dragId)return;const pt=svgPoint(e);
+function moveDrag(e){if(!dragId)return;dragMoved=true;const pt=svgPoint(e);
   const n=nodes.find(x=>x.id===dragId);if(n){n.x=pt.x;n.y=pt.y;n.vx=0;n.vy=0;renderPositions();}
   if(e.cancelable)e.preventDefault();}
 function endDrag(){if(dragId){const n=nodes.find(x=>x.id===dragId);if(n)n.dragging=false;}
