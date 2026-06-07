@@ -329,9 +329,66 @@
       display:flex;align-items:center;justify-content:center}
     .sheet-handle.hide{display:none}
   }
+#welcomePage{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  background:#16151a;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+
+.welcome-card{
+  max-width:700px;
+  text-align:center;
+  background:#23222b;
+  border:1px solid #34323e;
+  border-radius:12px;
+  padding:40px;
+}
+
+.welcome-card h1{
+  color:#c9a86a;
+  margin-bottom:20px;
+}
+
+.welcome-card p{
+  line-height:1.8;
+  margin:12px 0;
+  color:#e8e6ee;
+}
+
+.qq-box{
+  margin:20px 0;
+  padding:14px;
+  border-radius:8px;
+  background:#1e1d24;
+}
 </style>
 </head>
 <body>
+<div id="welcomePage">
+  <div class="welcome-card">
+    <h1>人物关系图谱</h1>
+
+    <p>✓ 数据仅保存在本地浏览器，不上传服务器，不会泄露文本内容</p>
+    <p>✓ 支持本地数据存档，可导入导出</p>
+    <p>✓ 适用于小说创作与世界观设计</p>
+
+    <div class="qq-box">
+      <b>使用反馈交流群</b><br>
+      QQ群：331857008
+    </div>
+
+    <button class="btn gold" onclick="startApp()">
+      开始使用
+    </button>
+  </div>
+</div>
+
+<div id="app">
 
 <header>
   <h1><span class="mk">❖</span>人物关系演变图谱</h1>
@@ -1737,6 +1794,10 @@ function syncResponsive(){
 }
 load();applyScale();applyGraphScale();buildNodes();renderAll();syncResponsive();wakeLayout(120);
 window.addEventListener('resize',()=>{ renderTimeline(); applyGraphScale(); syncResponsive(); wakeLayout(40); });
+function startApp(){
+  document.getElementById('welcomePage').remove();
+}
 </script>
+</div>
 </body>
 </html>
