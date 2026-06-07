@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>人物关系演变图谱</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+  :root{
+    --bg:#16151a;
+    --bg-soft:#1e1d24;
+    --bg-panel:#23222b;
+    --line:#34323e;
+    --ink:#e8e6ee;
+    --ink-soft:#a09dae;
+    --ink-dim:#827f92;
+    --gold:#c9a86a;
+    --gold-dim:#8f7944;
+    /* 情感分档色 */
+    --hate:#cf4b3a;      /* 敌对 红 */
+    --neutral-c:#e8e6ee; /* 认识但不敌对不亲密 白 */
+    --love:#4caf6e;      /* 亲密 绿 */
+    --secret:#a06cd5;    /* 隐秘交情 紫 */
+    --shadow:0 8px 30px rgba(0,0,0,.4);
+    --radius:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Noto Sans SC',sans-serif;
+    background:var(--bg);color:var(--ink);overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(900px 500px at 78% -8%, rgba(201,168,106,.06), transparent 60%);
+  }
+
+  header{
+    height:58px;display:flex;align-items:center;gap:18px;
+    padding:0 22px;border-bottom:1px solid var(--line);
+    background:linear-gradient(to bottom,#1c1b22,#181720);position:relative;z-index:5;
+  }
+  header h1{font-family:'Noto Serif SC',serif;font-weight:700;font-size:19px;letter-spacing:.04em}
+  header h1 .mk{color:var(--gold);font-size:15px;margin-right:8px}
+  .top-actions{margin-left:auto;display:flex;gap:9px}
+  .btn{font-family:inherit;font-size:13px;cursor:pointer;border:1px solid var(--line);
+    background:var(--bg-panel);color:var(--ink-soft);padding:7px 14px;border-radius:7px;
+    transition:.18s;white-space:nowrap}
+  .btn:hover{border-color:var(--gold-dim);color:var(--ink)}
+  .btn.gold{background:var(--gold);color:#2a230f;border-color:var(--gold);font-weight:500}
+  .btn.gold:hover{background:#d9b878}
+  .btn.sm{padding:5px 10px;font-size:12px}
+  .btn.danger:hover{border-color:var(--hate);color:#e98a76}
+  .zoom-grp{display:flex;align-items:center;gap:4px;margin-right:4px}
+  .zb{padding:5px 9px;font-weight:600}
+  .zlab{font-size:12px;color:var(--ink-dim);min-width:38px;text-align:center}
+  .theme-color-row{display:flex;align-items:center;gap:10px;margin:9px 0;
+    background:var(--bg-panel);border:1px solid var(--line);border-radius:8px;padding:8px 11px}
+  .theme-color-row .nm{font-size:13px;flex:1}
+  .theme-color-row .preview{display:flex;gap:3px;align-items:center}
+  .theme-color-row .preview i{width:14px;height:8px;border-radius:2px}
+  .theme-color-row input[type=color]{width:42px;height:30px;padding:2px;cursor:pointer}
+
+  /* 视角选择条 */
+  .viewbar{
+    height:42px;display:flex;align-items:center;gap:10px;padding:0 22px;
+    border-bottom:1px solid var(--line);background:#1a191f;position:relative;z-index:4;
+  }
+  .viewbar .vlab{font-size:12px;color:var(--ink-dim);letter-spacing:.05em}
+  .viewbar select{width:auto;min-width:150px;font-size:13px;padding:5px 10px}
+  .viewbar .vtag{font-size:11px;color:var(--secret);margin-left:4px}
+
+  .stage{display:flex;height:calc(100vh - 58px - 42px - 132px);position:relative;z-index:1}
+  #graph{flex:1;position:relative;overflow:hidden}
+  #graph svg{width:100%;height:100%;display:block;cursor:grab}
+  #graph svg.dragging{cursor:grabbing}
+
+  aside{width:330px;border-left:1px solid var(--line);background:var(--bg-soft);
+    display:flex;flex-direction:column;overflow:hidden}
+  .tabs{display:flex;border-bottom:1px solid var(--line)}
+  .tab{flex:1;text-align:center;padding:12px 0;font-size:13px;cursor:pointer;
+    color:var(--ink-dim);border-bottom:2px solid transparent;transition:.15s}
+  .tab:hover{color:var(--ink-soft)}
+  .tab.on{color:var(--gold);border-bottom-color:var(--gold)}
+  .panel{flex:1;overflow-y:auto;padding:16px}
+  .panel::-webkit-scrollbar{width:8px}
+  .panel::-webkit-scrollbar-thumb{background:#34323e;border-radius:4px}
+  .panel-title{font-family:'Noto Serif SC',serif;font-size:13px;color:var(--ink-dim);
+    letter-spacing:.08em;margin-bottom:12px;text-transform:uppercase}
+
+  label{display:block;font-size:12px;color:var(--ink-dim);margin:10px 0 5px}
+  input,select,textarea{width:100%;font-family:inherit;font-size:13px;color:var(--ink);
+    background:var(--bg-panel);border:1px solid var(--line);border-radius:7px;
+    padding:8px 10px;transition:.15s}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold-dim)}
+  textarea{resize:vertical;min-height:54px;line-height:1.5}
+  .row{display:flex;gap:9px}
+  .row>*{flex:1}
+
+  .item{background:var(--bg-panel);border:1px solid var(--line);border-radius:8px;
+    padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:.15s;position:relative}
+  .item:hover{border-color:var(--gold-dim)}
+  .item.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+  .item .nm{font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px}
+  .item .dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+  .item .meta{font-size:11px;color:var(--ink-dim);margin-top:3px;line-height:1.4}
+  .item .x{position:absolute;top:8px;right:9px;color:var(--ink-dim);font-size:15px;
+    width:20px;height:20px;line-height:18px;text-align:center;border-radius:5px}
+  .item .x:hover{background:var(--hate);color:#fff}
+  .empty{color:var(--ink-dim);font-size:12px;text-align:center;padding:24px 0;line-height:1.6}
+
+  .timeline{height:132px;border-top:1px solid var(--line);
+    background:linear-gradient(to top,#1a191f,#1e1d24);position:relative;z-index:4;
+    display:flex;flex-direction:column}
+  .tl-head{display:flex;align-items:center;gap:12px;padding:9px 18px 4px}
+  .tl-head .hint{font-size:11px;color:var(--ink-dim)}
+  .tl-track-wrap{flex:1;overflow-x:auto;overflow-y:hidden;padding:0 18px 12px}
+  .tl-track-wrap::-webkit-scrollbar{height:8px}
+  .tl-track-wrap::-webkit-scrollbar-thumb{background:#34323e;border-radius:4px}
+  .tl-track{position:relative;height:72px;min-width:100%;display:flex;align-items:center}
+  .tl-line{position:absolute;left:0;right:0;top:36px;height:2px;
+    background:linear-gradient(to right,var(--gold-dim),var(--line))}
+  .ev{position:relative;flex-shrink:0;display:flex;flex-direction:column;
+    align-items:center;cursor:pointer;z-index:2}
+  .ev .knob{width:15px;height:15px;border-radius:50%;background:var(--bg-panel);
+    border:2px solid var(--gold-dim);margin-top:29px;transition:.15s}
+  .ev:hover .knob{border-color:var(--gold);transform:scale(1.2)}
+  .ev.on .knob{background:var(--gold);border-color:var(--gold);
+    box-shadow:0 0 0 4px rgba(201,168,106,.22);transform:scale(1.25)}
+  .ev .lab{margin-top:7px;font-size:11px;color:var(--ink-dim);white-space:nowrap;
+    max-width:90px;overflow:hidden;text-overflow:ellipsis}
+  .ev.on .lab{color:var(--gold)}
+  .ev .ord{position:absolute;top:8px;font-size:10px;color:var(--ink-dim)}
+  .tl-add{flex-shrink:0;margin-left:14px;align-self:center;margin-top:29px;
+    width:30px;height:30px;border-radius:50%;border:1px dashed var(--gold-dim);
+    color:var(--gold-dim);background:transparent;font-size:18px;cursor:pointer;
+    transition:.15s;line-height:1}
+  .tl-add:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,168,106,.08)}
+
+  .now-bar{position:absolute;top:14px;left:18px;z-index:3;
+    background:rgba(35,34,43,.86);backdrop-filter:blur(6px);border:1px solid var(--line);
+    border-radius:9px;padding:9px 14px;max-width:340px}
+  .now-bar .et{font-family:'Noto Serif SC',serif;font-size:14px;color:var(--gold)}
+  .now-bar .ed{font-size:11px;color:var(--ink-soft);margin-top:3px;line-height:1.5}
+  .reader-info{margin-top:6px;color:var(--secret)}
+  .graph-zoom{position:absolute;top:14px;right:18px;z-index:7;display:flex;align-items:center;gap:4px;
+    background:rgba(35,34,43,.86);backdrop-filter:blur(6px);border:1px solid var(--line);
+    border-radius:9px;padding:6px;box-shadow:0 4px 18px rgba(0,0,0,.28)}
+  .graph-zoom .btn{padding:5px 9px;min-width:30px}
+  .graph-zoom .zlab{min-width:42px}
+
+  .legend{position:absolute;bottom:14px;left:18px;z-index:6;
+    background:rgba(35,34,43,.92);backdrop-filter:blur(6px);border:1px solid var(--line);
+    border-radius:9px;font-size:11px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.35);
+    user-select:none;min-width:150px}
+  .legend-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:7px 10px;cursor:move;background:rgba(255,255,255,.04);border-bottom:1px solid var(--line)}
+  .legend.min .legend-bar{border-bottom:none}
+  .legend-title{font-size:11px;color:var(--ink-soft);letter-spacing:.08em}
+  .legend-min{width:22px;height:20px;border:1px solid var(--line);background:var(--bg-panel);
+    color:var(--ink-soft);border-radius:5px;cursor:pointer;font-size:13px;line-height:1;padding:0}
+  .legend-min:hover{border-color:var(--gold-dim);color:var(--ink)}
+  .legend-body{padding:11px 14px}
+  .legend.min .legend-body{display:none}
+  .legend .lt{color:var(--ink-dim);margin-bottom:7px;letter-spacing:.06em}
+  .legend .ki{display:flex;align-items:center;gap:7px;margin-top:5px;color:var(--ink-soft)}
+  .legend .ki svg{flex-shrink:0}
+  .legend .sw{width:22px;height:4px;border-radius:2px;flex-shrink:0;display:inline-block}
+
+  .node circle{cursor:pointer;transition:filter .15s}
+  .node:hover circle{filter:brightness(1.25)}
+  .node text{fill:var(--ink);font-size:13px;font-family:'Noto Sans SC';
+    text-anchor:middle;pointer-events:none;font-weight:500}
+  .node .ring{fill:none;stroke:var(--gold);stroke-width:2.5;opacity:0}
+  .node.sel .ring{opacity:1}
+  .node.dim{opacity:.28}
+  .edge-label{fill:var(--ink-dim);font-size:10px;text-anchor:middle;
+    pointer-events:none;font-family:'Noto Sans SC'}
+  .diff-edge{pointer-events:none}
+  .diff-note{fill:var(--secret);font-size:9px;text-anchor:middle;pointer-events:none}
+
+  .slider-val{font-size:12px;font-weight:600;float:right}
+  .stcategory{display:flex;gap:0;border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-top:4px}
+  .stcategory button, .seg button{flex:1;background:var(--bg-panel);border:none;color:var(--ink-dim);
+    font-family:inherit;font-size:12px;padding:8px 0;cursor:pointer;transition:.15s}
+  .seg{display:flex;gap:0;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+  .seg button.on{background:var(--gold);color:#2a230f}
+  .emoseg{display:flex;gap:0;border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-top:4px}
+  .emoseg button{flex:1;background:var(--bg-panel);border:none;font-family:inherit;
+    font-size:12px;padding:8px 2px;cursor:pointer;transition:.15s;color:var(--ink-dim);border-right:1px solid var(--line)}
+  .emoseg button:last-child{border-right:none}
+  .emoseg button.on{color:#16151a;font-weight:600}
+
+  .relrow{background:var(--bg-panel);border:1px solid var(--line);border-radius:8px;
+    padding:10px 12px;margin-bottom:8px;position:relative}
+  .relrow .pair{font-size:13px;font-weight:500;margin-bottom:6px}
+  .relrow .pair b{color:var(--gold)}
+  .relrow .x{position:absolute;top:7px;right:9px;color:var(--ink-dim);font-size:15px;
+    cursor:pointer;width:20px;height:20px;line-height:18px;text-align:center;border-radius:5px}
+  .relrow .x:hover{background:var(--hate);color:#fff}
+  .relrow .bloodtag{display:inline-block;font-size:10px;padding:2px 7px;border-radius:4px;
+    background:rgba(201,168,106,.16);color:var(--gold);margin-left:6px}
+  .mini-note{font-size:11px;color:var(--ink-dim);margin-top:6px;line-height:1.5}
+  .chip{display:inline-block;font-size:10px;padding:1px 7px;border-radius:10px;margin-left:5px}
+  .scale-row{display:grid;grid-template-columns:repeat(11,1fr);gap:0;margin-top:4px;color:var(--ink-dim);font-size:9px;text-align:center}
+  .copy-row{display:flex;gap:8px;align-items:flex-end;margin-top:10px}
+  .dim-tools{display:flex;gap:8px;margin:8px 0}
+  .dim-group{border:1px solid var(--line);border-radius:8px;padding:9px 10px;margin-top:9px;background:rgba(255,255,255,.02)}
+  .dim-title{font-size:12px;color:var(--gold);margin-bottom:6px}
+  .dim-row{display:grid;grid-template-columns:58px 1fr 38px;gap:8px;align-items:center;margin:6px 0}
+  .dim-row label{margin:0;font-size:11px;color:var(--ink-soft)}
+  .dim-row input{padding:0}
+  .dim-val{font-size:11px;color:var(--ink-dim);text-align:right}
+  .event-card,.arc-card{background:var(--bg-panel);border:1px solid var(--line);border-radius:8px;padding:11px 12px;margin-bottom:10px}
+  .event-card h4,.arc-card h4{font-size:14px;color:var(--gold);margin-bottom:6px}
+  .story-list{font-size:11px;color:var(--ink-soft);line-height:1.55;margin-top:5px}
+  .story-list b{color:var(--ink)}
+
+  .mask{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:none;
+    align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+  .mask.on{display:flex}
+  .modal{width:460px;max-width:92vw;max-height:90vh;overflow-y:auto;background:var(--bg-soft);
+    border:1px solid var(--line);border-radius:14px;padding:24px;box-shadow:var(--shadow)}
+  .modal h3{font-family:'Noto Serif SC',serif;font-size:17px;margin-bottom:4px}
+  .modal .sub{font-size:12px;color:var(--ink-dim);margin-bottom:14px;line-height:1.5}
+  .modal-actions{display:flex;gap:9px;justify-content:flex-end;margin-top:18px}
+
+  .toast{position:fixed;bottom:150px;left:50%;transform:translateX(-50%);
+    background:var(--bg-panel);border:1px solid var(--gold-dim);color:var(--ink);
+    padding:10px 20px;border-radius:8px;font-size:13px;z-index:80;opacity:0;
+    transition:.3s;pointer-events:none;box-shadow:var(--shadow)}
+  .toast.on{opacity:1;bottom:160px}
+
+  /* 折线图 */
+  .chart-wrap{margin-top:14px;background:var(--bg-panel);border:1px solid var(--line);
+    border-radius:9px;padding:12px}
+  .chart-wrap .ct{font-size:12px;color:var(--ink-soft);margin-bottom:8px}
+  .perspective-block{background:rgba(160,108,213,.08);border:1px solid rgba(160,108,213,.3);
+    border-radius:9px;padding:11px 12px;margin:12px 0}
+  .perspective-block .pt{font-size:12px;color:var(--secret);margin-bottom:8px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="mk">❖</span>人物关系演变图谱</h1>
+  <div class="top-actions">
+    <div class="zoom-grp">
+      <button class="btn sm zb" onclick="zoom(-1)" title="缩小字体">A−</button>
+      <span class="zlab" id="zoomLab">100%</span>
+      <button class="btn sm zb" onclick="zoom(1)" title="放大字体">A+</button>
+    </div>
+    <button class="btn sm" onclick="openTheme()">配色主题</button>
+    <button class="btn sm" onclick="exportData()">导出存档</button>
+    <button class="btn sm" onclick="document.getElementById('importer').click()">导入存档</button>
+    <input type="file" id="importer" accept=".json" style="display:none" onchange="importData(event)">
+    <button class="btn sm" onclick="loadDemo()">载入示例</button>
+    <button class="btn sm danger" onclick="resetAll()">清空</button>
+  </div>
+</header>
+
+<!-- 配色主题模态 -->
+<div class="mask" id="themeMask"><div class="modal">
+  <h3>配色主题</h3>
+  <div class="sub">每套主题给四类情感各设一个基准色。图上深浅由强度自动决定，强度越高颜色越深。</div>
+  <label>当前主题</label>
+  <select id="themeSel" onchange="switchTheme(this.value)"></select>
+  <div id="themeEditor"></div>
+  <div class="row" style="margin-top:14px">
+    <button class="btn sm" onclick="newTheme()">＋ 新建主题</button>
+    <button class="btn sm" onclick="dupTheme()">复制当前</button>
+    <button class="btn sm danger" onclick="delTheme()">删除当前</button>
+  </div>
+  <div class="modal-actions">
+    <button class="btn" onclick="resetTheme()">恢复此主题默认</button>
+    <button class="btn gold" onclick="closeMask('themeMask')">完成</button>
+  </div>
+</div></div>
+
+<div class="viewbar">
+  <span class="vlab">视角</span>
+  <select id="viewSel" onchange="setView(this.value)"></select>
+  <span class="vtag" id="viewTag"></span>
+  <span class="vlab" style="margin-left:auto" id="viewHint">全知看真相；角色视角看误会；读者视角看已揭示信息量</span>
+</div>
+
+<div class="stage">
+  <div id="graph">
+    <div class="now-bar" id="nowBar"></div>
+    <div class="graph-zoom">
+      <button class="btn sm" onclick="graphZoom(-1)" title="缩小图谱主体">−</button>
+      <span class="zlab" id="graphZoomLab">100%</span>
+      <button class="btn sm" onclick="graphZoom(1)" title="放大图谱主体">＋</button>
+      <button class="btn sm" onclick="resetGraphZoom()" title="重置图谱主体比例">1:1</button>
+    </div>
+    <svg id="svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="legend" id="legend">
+      <div class="legend-bar" id="legendBar">
+        <span class="legend-title">图例</span>
+        <button class="legend-min" id="legendMin" onclick="toggleLegend(event)" title="最小化">－</button>
+      </div>
+      <div class="legend-body" id="legendBody">
+        <div class="lt">情感状态（颜色越深强度越高）</div>
+        <div id="legendEmo"></div>
+        <div class="ki" style="color:var(--ink-dim)">无线条 = 不认识</div>
+        <div class="lt" style="margin:9px 0 4px">伦理关系</div>
+        <div class="ki"><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#e8e6ee" stroke-width="3"/></svg>血缘亲属（实线）</div>
+        <div class="ki"><svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke="#e8e6ee" stroke-width="2" stroke-dasharray="5,4"/></svg>非血缘（虚线）</div>
+      </div>
+    </div>
+  </div>
+
+  <aside>
+    <div class="tabs">
+      <div class="tab on" data-tab="people" onclick="switchTab('people')">人物</div>
+      <div class="tab" data-tab="rel" onclick="switchTab('rel')">关系</div>
+      <div class="tab" data-tab="chart" onclick="switchTab('chart')">曲线</div>
+      <div class="tab" data-tab="events" onclick="switchTab('events')">事件</div>
+      <div class="tab" data-tab="arc" onclick="switchTab('arc')">弧光</div>
+    </div>
+
+    <div class="panel" id="panel-people">
+      <div class="panel-title">人物表</div>
+      <div id="peopleList"></div>
+      <button class="btn gold" style="width:100%;margin-top:6px" onclick="openPerson()">＋ 新增人物</button>
+    </div>
+
+    <div class="panel" id="panel-rel" style="display:none">
+      <div class="panel-title">当前事件 · 当前视角下的关系</div>
+      <div id="relList"></div>
+      <button class="btn gold" style="width:100%;margin-top:6px" onclick="openRel()">＋ 新增关系</button>
+      <div class="mini-note">情感状态按事件分别记录。某事件未单独设定时，自动沿用之前最近一次的设定。</div>
+    </div>
+
+    <div class="panel" id="panel-chart" style="display:none">
+      <div class="panel-title">情感浓度曲线</div>
+      <div class="row">
+        <div><label>人物 A</label><select id="cA" onchange="renderChart()"></select></div>
+        <div><label>人物 B</label><select id="cB" onchange="renderChart()"></select></div>
+      </div>
+      <div id="chartArea"></div>
+    </div>
+
+    <div class="panel" id="panel-events" style="display:none">
+      <div class="panel-title">事件卡片视图</div>
+      <div id="eventCards"></div>
+    </div>
+
+    <div class="panel" id="panel-arc" style="display:none">
+      <div class="panel-title">人物弧光视图</div>
+      <label>角色</label>
+      <select id="arcPerson" onchange="renderArcView()"></select>
+      <div id="arcArea"></div>
+    </div>
+  </aside>
+</div>
+
+<div class="timeline">
+  <div class="tl-head">
+    <div class="panel-title" style="margin:0">关键事件轴</div>
+    <div class="hint">点事件点查看当时关系 · 点序号编辑 · 点 ＋ 新增</div>
+  </div>
+  <div class="tl-track-wrap"><div class="tl-track" id="tlTrack"><div class="tl-line"></div></div></div>
+</div>
+
+<!-- 人物模态 -->
+<div class="mask" id="personMask"><div class="modal">
+  <h3 id="personTitle">新增人物</h3>
+  <div class="sub">性格会随事件变化的部分写在备注里，可分阶段记录</div>
+  <label>姓名</label>
+  <input id="pName" placeholder="如：沈砚">
+  <div class="row">
+    <div><label>身份</label><input id="pRole" placeholder="如：长公子"></div>
+    <div><label>节点颜色</label><input id="pColor" type="color" value="#c9a86a" style="height:36px;padding:3px"></div>
+  </div>
+  <label>性格 / 当前状态</label>
+  <textarea id="pNote" placeholder="如：表面温和，内里多疑。第三卷后逐渐冷硬。"></textarea>
+  <label>当前事件的人物状态线（按事件记录）</label>
+  <textarea id="pState" placeholder="如：外在表现克制；内在开始怀疑林霜；当前欲望是保护妹妹；恐惧是身世暴露。"></textarea>
+  <div class="modal-actions">
+    <button class="btn" onclick="closeMask('personMask')">取消</button>
+    <button class="btn gold" onclick="savePerson()">保存</button>
+  </div>
+</div></div>
+
+<!-- 事件模态 -->
+<div class="mask" id="eventMask"><div class="modal">
+  <h3 id="eventTitle">新增事件</h3>
+  <div class="sub">事件按从左到右的顺序排列，代表故事推进</div>
+  <label>事件名</label>
+  <input id="eName" placeholder="如：祠堂对峙">
+  <label>事件描述</label>
+  <textarea id="eDesc" placeholder="如：真相揭穿，两人决裂。"></textarea>
+  <label>读者在此事件获得的信息</label>
+  <textarea id="eReader" placeholder="如：读者此时只知道林霜夜访崔越，但不知道两人真实盟约。"></textarea>
+  <label>插入位置</label>
+  <select id="ePos"></select>
+  <div class="modal-actions">
+    <button class="btn danger" id="eDelBtn" onclick="deleteEvent()" style="margin-right:auto;display:none">删除此事件</button>
+    <button class="btn" onclick="closeMask('eventMask')">取消</button>
+    <button class="btn gold" onclick="saveEvent()">保存</button>
+  </div>
+</div></div>
+
+<!-- 关系模态 -->
+<div class="mask" id="relMask"><div class="modal">
+  <h3 id="relTitle">新增关系</h3>
+  <div class="sub" id="relSub">伦理关系固定不变；情感状态记录在当前选中的事件上</div>
+  <div class="row">
+    <div><label>人物 A</label><select id="rA"></select></div>
+    <div><label>人物 B</label><select id="rB"></select></div>
+  </div>
+  <div class="copy-row">
+    <div style="flex:1"><label>从已有视角复制</label><select id="copySource"></select></div>
+    <button class="btn sm" onclick="copyFromSource()" type="button">复制到当前视角</button>
+  </div>
+  <label>伦理关系类型</label>
+  <div class="row" style="align-items:flex-end">
+    <div style="flex:2"><input id="rEthic" placeholder="如：父子 / 师徒 / 夫妻 / 同僚"></div>
+    <div style="flex:1">
+      <label style="margin-top:0">是否血缘</label>
+      <div class="seg" id="rBloodSeg">
+        <button data-v="1" onclick="setBlood(1)">血缘</button>
+        <button data-v="0" class="on" onclick="setBlood(0)">非血缘</button>
+      </div>
+    </div>
+  </div>
+
+  <label>当前事件下的情感状态</label>
+  <div class="emoseg" id="emoSeg">
+    <button data-v="none" onclick="setEmo('none')">不认识</button>
+    <button data-v="hate" onclick="setEmo('hate')">敌对</button>
+    <button data-v="neutral" onclick="setEmo('neutral')">认识·普通</button>
+    <button data-v="love" onclick="setEmo('love')">亲密</button>
+  </div>
+  <label style="display:flex;align-items:center;gap:8px;margin-top:12px;cursor:pointer">
+    <input type="checkbox" id="rSecret" style="width:auto" onchange="updateEmoPreview()">
+    <span style="color:var(--secret)">私下有交情（隐秘，他人不知）→ 整条线显示为紫色</span>
+  </label>
+
+  <div id="emoStrength" style="margin-top:12px">
+    <label>浓度强弱 <span class="slider-val" id="rStrLab">60%</span></label>
+    <input type="range" id="rStr" min="0" max="100" step="10" value="60" list="strengthTicks" oninput="updateStrLab()">
+    <datalist id="strengthTicks">
+      <option value="0"></option><option value="10"></option><option value="20"></option><option value="30"></option><option value="40"></option><option value="50"></option><option value="60"></option><option value="70"></option><option value="80"></option><option value="90"></option><option value="100"></option>
+    </datalist>
+    <div class="scale-row"><span>0</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span><span>60</span><span>70</span><span>80</span><span>90</span><span>100%</span></div>
+    <div class="mini-note">强弱只影响图上连线粗细和节点距离，不改变颜色分类</div>
+  </div>
+
+  <label>多维关系浓度（0 自动隐藏该维度）</label>
+  <div class="mini-note">可以只开启你关心的维度。若所有维度都是 0，这一刻的关系不会显示在图谱中。</div>
+  <div class="dim-tools">
+    <button class="btn sm" onclick="zeroDims()" type="button">全部归零</button>
+    <button class="btn sm" onclick="seedDimsFromEmotion()" type="button">按情感快速填充</button>
+  </div>
+  <div id="dimControls"></div>
+
+  <label>这一刻的关系备注（可选）</label>
+  <textarea id="rNote" placeholder="如：表面客气，暗藏戒备。"></textarea>
+  <label>关系变化原因（可选）</label>
+  <textarea id="rReason" placeholder="如：祠堂对峙后，苏晚发现沈砚隐瞒关键身世。"></textarea>
+
+  <div class="modal-actions">
+    <button class="btn" onclick="closeMask('relMask')">取消</button>
+    <button class="btn gold" onclick="saveRel()">保存</button>
+  </div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ 数据模型 ============
+state = {
+  people:[{id,name,role,color,note}],
+  events:[{id,name,desc}],
+  rels:[{
+    id,a,b,ethic,blood,
+    truth:{ vals:{evId:{emo,secret,str}}, notes:{evId:str} },   // 客观真相
+    views:{ viewerId:{ vals:{evId:{emo,secret,str}}, notes:{evId} } } // 旁观者认知
+  }]
+}
+emo ∈ 'none'|'hate'|'neutral'|'love'
+view: 'truth' 或某个 personId
+*/
+let state={people:[],events:[],rels:[]};
+let curEvent=null, curView='truth', selPerson=null;
+let editingPerson=null, editingRel=null, editingEvent=null;
+let bloodFlag=0, emoFlag='neutral';
+let graphScale = 1;
+// 配色主题：每套主题给四类情感各一个基准色。深浅由强度自动算。
+const DEFAULT_THEMES=[
+  {id:'classic',name:'经典',colors:{hate:'#cf4b3a',neutral:'#c9c6d2',love:'#4caf6e',secret:'#a06cd5'}},
+  {id:'ink',name:'水墨',colors:{hate:'#b3543f',neutral:'#9aa0a6',love:'#5b8c6e',secret:'#8a6fae'}},
+  {id:'vivid',name:'鲜亮',colors:{hate:'#ff5a4d',neutral:'#d8d4e0',love:'#34d17a',secret:'#b96be8'}}
+];
+let themes = JSON.parse(JSON.stringify(DEFAULT_THEMES));
+let curTheme = 'classic';
+let fontScale = 1;   // 全局字号倍率
+const KEY='novel_relation_graph_v3';
+const REL_DIMS=[
+  {group:'情感',items:[['like','喜欢'],['dislike','厌恶'],['depend','依赖'],['guilt','愧疚'],['fear','恐惧'],['jealousy','嫉妒']]},
+  {group:'信任',items:[['trust','信任'],['doubt','怀疑'],['betray','背叛']]},
+  {group:'权力',items:[['control','掌控'],['debt','亏欠'],['threat','威胁']]},
+  {group:'信息',items:[['knows','知道真相'],['mistake','误会'],['hidden','被隐瞒']]},
+  {group:'目标',items:[['cooperate','合作'],['use','利用'],['compete','竞争'],['protect','保护'],['revenge','复仇']]}
+];
+const DIM_LABELS=Object.fromEntries(REL_DIMS.flatMap(g=>g.items.map(([k,v])=>[k,v])));
+const DIM_GROUP=Object.fromEntries(REL_DIMS.flatMap(g=>g.items.map(([k])=>[k,g.group])));
+
+function save(){ localStorage.setItem(KEY,JSON.stringify({state,curEvent,curView,themes,curTheme,fontScale,graphScale})); }
+function dimsFromLegacy(st){
+  const v=parseInt(st&&st.str)||0;
+  if(!st||st.emo==='none'||v<=0)return {};
+  if(st.emo==='love')return {like:v,trust:Math.max(20,v-10)};
+  if(st.emo==='hate')return {dislike:v,compete:Math.max(20,v-10)};
+  return {trust:Math.max(10,Math.round(v/2))};
+}
+function normalizeLens(lens){
+  if(!lens)return;
+  lens.vals=lens.vals||{};lens.notes=lens.notes||{};lens.reasons=lens.reasons||{};
+  Object.values(lens.vals).forEach(st=>{ if(st&&!st.dims)st.dims=dimsFromLegacy(st); });
+}
+function normalizeState(){
+  state.people=(state.people||[]).map(p=>({states:{},...p}));
+  state.events=state.events||[];
+  state.rels=(state.rels||[]).map(r=>{
+    r.truth=r.truth||{vals:{},notes:{},reasons:{}}; normalizeLens(r.truth);
+    if(r.reader)normalizeLens(r.reader);
+    r.views=r.views||{}; Object.values(r.views).forEach(normalizeLens);
+    return r;
+  });
+}
+function load(){
+  try{ const raw=localStorage.getItem(KEY);
+    if(raw){const o=JSON.parse(raw);state=o.state||state;curEvent=o.curEvent||null;curView=o.curView||'truth';
+      themes=o.themes||themes;curTheme=o.curTheme||'classic';fontScale=o.fontScale||1;graphScale=o.graphScale||1;}
+  }catch(e){}
+  normalizeState();
+}
+function activeTheme(){ return themes.find(t=>t.id===curTheme)||themes[0]; }
+function uid(){return Math.random().toString(36).slice(2,9);}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),1900);}
+function eventIndex(id){return state.events.findIndex(e=>e.id===id);}
+function personById(id){return state.people.find(p=>p.id===id);}
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+/* 取某视角下关系数据来源：旁观者有录入就用旁观者，否则用真相 */
+function lensOf(r){
+  if(curView!=='truth' && r.views && r.views[curView]) return r.views[curView];
+  return r.truth;
+}
+// 任意视角+任意来源对象，做事件前向填充
+function stateAt(lens, evId){
+  if(!evId||!lens||!lens.vals) return null;
+  const idx=eventIndex(evId);
+  for(let i=idx;i>=0;i--){
+    const eid=state.events[i].id;
+    if(lens.vals[eid]!==undefined) return lens.vals[eid];
+  }
+  return null;
+}
+function noteAt(lens, evId){
+  if(!evId||!lens||!lens.notes) return '';
+  const idx=eventIndex(evId);
+  for(let i=idx;i>=0;i--){
+    const eid=state.events[i].id;
+    if(lens.notes[eid]) return lens.notes[eid];
+  }
+  return '';
+}
+function directTextAt(lens, bucket, evId){
+  return (lens&&lens[bucket]&&lens[bucket][evId]) || '';
+}
+function ensureLensStore(lens){
+  lens.vals=lens.vals||{}; lens.notes=lens.notes||{}; lens.reasons=lens.reasons||{};
+  return lens;
+}
+function lensForWrite(r){
+  if(curView==='truth') return ensureLensStore(r.truth);
+  if(curView==='reader'){ r.reader=ensureLensStore(r.reader||{vals:{},notes:{},reasons:{}}); return r.reader; }
+  r.views=r.views||{}; r.views[curView]=ensureLensStore(r.views[curView]||{vals:{},notes:{},reasons:{}});
+  return r.views[curView];
+}
+function lensForCurrent(r){
+  if(curView==='reader') return r.reader;
+  return lensOf(r);
+}
+function sameState(a,b){
+  if(!a&&!b)return true;
+  if(!a||!b)return false;
+  return (a.emo||'none')===(b.emo||'none') && !!a.secret===!!b.secret && (a.str||60)===(b.str||60) && JSON.stringify(a.dims||{})===JSON.stringify(b.dims||{});
+}
+function dimEntries(st){
+  return Object.entries(st&&st.dims?st.dims:{}).filter(([,v])=>parseInt(v)>0);
+}
+function dimStrength(st){
+  const vals=dimEntries(st).map(([,v])=>parseInt(v)||0);
+  if(vals.length)return Math.max(...vals);
+  return st&&st.emo&&st.emo!=='none'?(parseInt(st.str)||0):0;
+}
+function hasDimData(st){ return !!(st&&st.dims&&Object.keys(st.dims).length); }
+function topDim(st){
+  const ent=dimEntries(st).sort((a,b)=>(parseInt(b[1])||0)-(parseInt(a[1])||0))[0];
+  return ent?ent[0]:null;
+}
+function dimsSummary(st,limit=5){
+  const ent=dimEntries(st).sort((a,b)=>(parseInt(b[1])||0)-(parseInt(a[1])||0)).slice(0,limit);
+  return ent.map(([k,v])=>`${DIM_LABELS[k]||k}${v}%`).join(' / ');
+}
+function relationChangedAt(lens, evId){
+  return !!(lens&&lens.vals&&Object.prototype.hasOwnProperty.call(lens.vals,evId));
+}
+function hasPerspectiveDiff(r, evId){
+  if(curView==='truth')return false;
+  const lens=lensForCurrent(r);
+  if(!lens)return false;
+  return !sameState(stateAt(lens,evId), stateAt(r.truth,evId));
+}
+// 当前视角下，关系 r 在事件 evId 的呈现
+function relRender(r, evId){
+  const lens=lensForCurrent(r);
+  const st=stateAt(lens,evId);
+  if(!st || st.emo==='none') return null; // 不画线
+  if(dimStrength(st)<=0) return null;
+  return st; // {emo,secret,str}
+}
+// hex -> {r,g,b}
+function hex2rgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');
+  return{r:parseInt(h.slice(0,2),16),g:parseInt(h.slice(2,4),16),b:parseInt(h.slice(4,6),16)};}
+function rgb2css(c){return`rgb(${c.r},${c.g},${c.b})`;}
+// 按强度把基准色调深：str 20..100，越大越深。factor 控制最深可压到多少。
+function darken(hex,str){
+  const c=hex2rgb(hex);
+  const s=Math.max(20,Math.min(100,str||60));
+  const lift=(100-s)/100*0.35;
+  const cut =(s-20)/80*0.45;
+  const k=1+lift-cut;
+  const cl=v=>Math.max(0,Math.min(255,Math.round(v*k)));
+  return rgb2css({r:cl(c.r),g:cl(c.g),b:cl(c.b)});
+}
+// 取某情感类别的基准色
+function baseColor(emo,secret){
+  const t=activeTheme().colors;
+  if(secret) return t.secret;
+  if(emo==='hate') return t.hate;
+  if(emo==='love') return t.love;
+  return t.neutral;
+}
+// 实际渲染色：基准色 + 强度调深
+function emoColorRaw(st){
+  if(!st||st.emo==='none') return '#3a3844';
+  return darken(baseColor(st.emo,st.secret), st.str);
+}
+function emoBg(st){
+  if(!st||st.emo==='none')return 'rgba(120,120,140,.12)';
+  const c=hex2rgb(baseColor(st.emo,st.secret));
+  return `rgba(${c.r},${c.g},${c.b},.18)`;
+}
+function emoColor(st){ return emoColorRaw(st); }
+function emoLabel(st){
+  if(!st||st.emo==='none') return '不认识';
+  let base = st.emo==='hate'?'敌对':st.emo==='love'?'亲密':'普通';
+  const s=st.str||60; const lv = s<40?'弱':s<75?'中':'强';
+  return base + (st.secret?'·隐秘':'') + '·'+lv;
+}
+
+/* ---------- Tab ---------- */
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));
+  ['people','rel','chart','events','arc'].forEach(k=>{
+    document.getElementById('panel-'+k).style.display = k===t?'block':'none';
+  });
+  if(t==='chart') initChartSelectors();
+  if(t==='events') renderEventCards();
+  if(t==='arc') initArcView();
+}
+
+/* ---------- 视角 ---------- */
+function renderViewBar(){
+  const sel=document.getElementById('viewSel');
+  sel.innerHTML='';
+  sel.add(new Option('全知视角（真相）','truth'));
+  sel.add(new Option('读者视角（已揭示信息）','reader'));
+  state.people.forEach(p=>sel.add(new Option(p.name+' 眼中','p_'+p.id)));
+  sel.value = curView==='truth'?'truth':(curView==='reader'?'reader':('p_'+curView));
+  const tag=document.getElementById('viewTag');
+  if(curView==='truth'){ tag.textContent=''; }
+  else if(curView==='reader'){ tag.textContent='· 读者已知'; }
+  else{ const p=personById(curView); tag.textContent = p?('— '+p.name+'所见'):''; }
+}
+function setView(v){
+  curView = v==='truth'||v==='reader'?v:v.slice(2);
+  selPerson=null; save(); renderAll();
+}
+
+/* ---------- 人物 ---------- */
+function renderPeople(){
+  const box=document.getElementById('peopleList');
+  if(!state.people.length){box.innerHTML='<div class="empty">还没有人物。<br>点下方按钮添加第一个角色。</div>';return;}
+  box.innerHTML='';
+  state.people.forEach(p=>{
+    const evState = curEvent && p.states ? p.states[curEvent] : '';
+    const d=document.createElement('div');
+    d.className='item'+(selPerson===p.id?' sel':'');
+    d.innerHTML=`<div class="nm"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</div>
+      ${p.role?`<div class="meta">${esc(p.role)}</div>`:''}
+      ${p.note?`<div class="meta">${esc(p.note)}</div>`:''}
+      ${evState?`<div class="meta"><b style="color:var(--gold)">当前事件状态：</b>${esc(evState)}</div>`:''}
+      <span class="x" title="删除">×</span>`;
+    d.onclick=(e)=>{ if(e.target.classList.contains('x')){delPerson(p.id);return;} openPerson(p.id); };
+    box.appendChild(d);
+  });
+}
+function openPerson(id){
+  editingPerson=id||null; const p=id?personById(id):null;
+  document.getElementById('personTitle').textContent=id?'编辑人物':'新增人物';
+  document.getElementById('pName').value=p?p.name:'';
+  document.getElementById('pRole').value=p?p.role||'':'';
+  document.getElementById('pColor').value=p?p.color:'#c9a86a';
+  document.getElementById('pNote').value=p?p.note||'':'';
+  document.getElementById('pState').value=p&&curEvent&&p.states?p.states[curEvent]||'':'';
+  openMask('personMask');
+}
+function savePerson(){
+  const name=document.getElementById('pName').value.trim();
+  if(!name){toast('请填写姓名');return;}
+  const data={name,role:document.getElementById('pRole').value.trim(),
+    color:document.getElementById('pColor').value,note:document.getElementById('pNote').value.trim()};
+  const evState=document.getElementById('pState').value.trim();
+  if(editingPerson){
+    const p=personById(editingPerson);
+    Object.assign(p,data);
+    p.states=p.states||{};
+    if(curEvent){ if(evState)p.states[curEvent]=evState; else delete p.states[curEvent]; }
+  }
+  else{
+    const p={id:uid(),...data,states:{}};
+    if(curEvent&&evState)p.states[curEvent]=evState;
+    state.people.push(p);
+  }
+  closeMask('personMask');save();renderAll();
+}
+function delPerson(id){
+  if(!confirm('删除这个人物？相关的关系也会一并删除。'))return;
+  state.people=state.people.filter(p=>p.id!==id);
+  state.rels=state.rels.filter(r=>r.a!==id&&r.b!==id);
+  // 同时清掉以该人为视角录入的认知
+  state.rels.forEach(r=>{ if(r.views) delete r.views[id]; });
+  if(selPerson===id)selPerson=null;
+  if(curView===id)curView='truth';
+  save();renderAll();
+}
+
+/* ---------- 事件 ---------- */
+function renderTimeline(){
+  const track=document.getElementById('tlTrack');
+  track.querySelectorAll('.ev,.tl-add').forEach(n=>n.remove());
+  const gap=Math.max(120,(track.clientWidth-60)/Math.max(state.events.length,1));
+  state.events.forEach((ev,i)=>{
+    const el=document.createElement('div');
+    el.className='ev'+(curEvent===ev.id?' on':'');
+    el.style.minWidth=gap+'px';
+    el.innerHTML=`<span class="ord">${i+1}</span><div class="knob"></div><div class="lab">${esc(ev.name)}</div>`;
+    el.querySelector('.knob').onclick=()=>selectEvent(ev.id);
+    el.querySelector('.lab').onclick=()=>selectEvent(ev.id);
+    el.querySelector('.ord').onclick=()=>openEvent(ev.id);
+    track.appendChild(el);
+  });
+  const add=document.createElement('button');
+  add.className='tl-add';add.textContent='＋';add.title='新增事件';add.onclick=()=>openEvent();
+  track.appendChild(add);
+}
+function selectEvent(id){curEvent=id;selPerson=null;save();renderAll();}
+function openEvent(id){
+  editingEvent=id||null; const ev=id?state.events.find(e=>e.id===id):null;
+  document.getElementById('eventTitle').textContent=id?'编辑事件':'新增事件';
+  document.getElementById('eName').value=ev?ev.name:'';
+  document.getElementById('eDesc').value=ev?ev.desc||'':'';
+  document.getElementById('eReader').value=ev?ev.reader||'':'';
+  const sel=document.getElementById('ePos');sel.innerHTML='';
+  sel.add(new Option('放在最后',state.events.length));
+  state.events.forEach((e,i)=>{if(e.id!==id)sel.add(new Option('在「'+e.name+'」之前',i));});
+  document.getElementById('eDelBtn').style.display=id?'inline-block':'none';
+  sel.disabled=!!id;
+  openMask('eventMask');
+}
+function saveEvent(){
+  const name=document.getElementById('eName').value.trim();
+  if(!name){toast('请填写事件名');return;}
+  const desc=document.getElementById('eDesc').value.trim();
+  const reader=document.getElementById('eReader').value.trim();
+  if(editingEvent){const ev=state.events.find(e=>e.id===editingEvent);ev.name=name;ev.desc=desc;ev.reader=reader;}
+  else{const pos=parseInt(document.getElementById('ePos').value);
+    const ne={id:uid(),name,desc,reader};state.events.splice(pos,0,ne);if(!curEvent)curEvent=ne.id;}
+  closeMask('eventMask');save();renderAll();
+}
+function deleteEvent(){
+  if(!editingEvent)return;
+  if(!confirm('删除这个事件？该事件上单独记录的状态会丢失。'))return;
+  state.rels.forEach(r=>{
+    if(r.truth){if(r.truth.vals)delete r.truth.vals[editingEvent];if(r.truth.notes)delete r.truth.notes[editingEvent];if(r.truth.reasons)delete r.truth.reasons[editingEvent];}
+    if(r.reader){if(r.reader.vals)delete r.reader.vals[editingEvent];if(r.reader.notes)delete r.reader.notes[editingEvent];if(r.reader.reasons)delete r.reader.reasons[editingEvent];}
+    if(r.views)Object.values(r.views).forEach(v=>{if(v.vals)delete v.vals[editingEvent];if(v.notes)delete v.notes[editingEvent];if(v.reasons)delete v.reasons[editingEvent];});
+  });
+  state.people.forEach(p=>{ if(p.states) delete p.states[editingEvent]; });
+  state.events=state.events.filter(e=>e.id!==editingEvent);
+  if(curEvent===editingEvent)curEvent=state.events.length?state.events[0].id:null;
+  closeMask('eventMask');save();renderAll();
+}
+
+/* ---------- 关系 ---------- */
+function renderDimControls(){
+  const box=document.getElementById('dimControls');
+  if(!box)return;
+  box.innerHTML=REL_DIMS.map(g=>`<div class="dim-group">
+    <div class="dim-title">${g.group}</div>
+    ${g.items.map(([k,label])=>`<div class="dim-row">
+      <label>${label}</label>
+      <input type="range" class="dim-input" data-k="${k}" min="0" max="100" step="10" value="0" oninput="updateDimVal(this)">
+      <span class="dim-val" id="dimVal-${k}">0%</span>
+    </div>`).join('')}
+  </div>`).join('');
+}
+function updateDimVal(input){
+  const v=parseInt(input.value)||0;
+  const el=document.getElementById('dimVal-'+input.dataset.k);
+  if(el)el.textContent=v+'%';
+}
+function readDims(){
+  const dims={};
+  document.querySelectorAll('.dim-input').forEach(i=>{dims[i.dataset.k]=parseInt(i.value)||0;});
+  return dims;
+}
+function fillDims(dims){
+  document.querySelectorAll('.dim-input').forEach(i=>{
+    i.value=(dims&&dims[i.dataset.k])?dims[i.dataset.k]:0;
+    updateDimVal(i);
+  });
+}
+function zeroDims(){ fillDims({}); }
+function seedDimsFromEmotion(){
+  const v=parseInt(document.getElementById('rStr').value)||60;
+  const dims={};
+  if(emoFlag==='love'){dims.like=v;dims.trust=Math.max(30,v-10);}
+  else if(emoFlag==='hate'){dims.dislike=v;dims.compete=Math.max(30,v-10);}
+  else if(emoFlag==='neutral'){dims.trust=Math.max(20,Math.round(v/2));}
+  fillDims(dims);
+}
+function cloneLensAtEvent(src){
+  const out={};
+  if(src&&src.vals&&src.vals[curEvent])out.val=JSON.parse(JSON.stringify(src.vals[curEvent]));
+  if(src&&src.notes&&src.notes[curEvent])out.note=src.notes[curEvent];
+  if(src&&src.reasons&&src.reasons[curEvent])out.reason=src.reasons[curEvent];
+  return out;
+}
+function lensOptionsFor(r){
+  const opts=[['truth','全知真相',r.truth]];
+  if(r.reader)opts.push(['reader','读者视角',r.reader]);
+  state.people.forEach(p=>{ if(r.views&&r.views[p.id])opts.push(['p_'+p.id,p.name+' 眼中',r.views[p.id]]); });
+  return opts;
+}
+function populateCopySources(r){
+  const sel=document.getElementById('copySource');
+  if(!sel)return;
+  sel.innerHTML='';
+  if(!r){sel.add(new Option('保存后可复制已有视角',''));sel.disabled=true;return;}
+  lensOptionsFor(r).forEach(([id,label,lens])=>{
+    if(id===(curView==='truth'?'truth':curView==='reader'?'reader':'p_'+curView))return;
+    const has=lens&&lens.vals&&lens.vals[curEvent];
+    sel.add(new Option(label+(has?' · 本事件':' · 沿用/空'),id));
+  });
+  sel.disabled=!sel.options.length;
+  if(!sel.options.length)sel.add(new Option('暂无可复制视角',''));
+}
+function copyFromSource(){
+  if(!editingRel){toast('请先保存关系，再复制视角认知');return;}
+  const r=state.rels.find(x=>x.id===editingRel), srcId=document.getElementById('copySource').value;
+  if(!r||!srcId){toast('没有可复制的视角');return;}
+  const opt=lensOptionsFor(r).find(x=>x[0]===srcId);
+  if(!opt){toast('没有找到来源视角');return;}
+  const data=cloneLensAtEvent(opt[2]);
+  if(!data.val){toast('来源视角在当前事件没有单独记录');return;}
+  setEmo(data.val.emo||'neutral');
+  document.getElementById('rSecret').checked=!!data.val.secret;
+  document.getElementById('rStr').value=data.val.str||0;
+  document.getElementById('rNote').value=data.note||'';
+  document.getElementById('rReason').value=data.reason||'';
+  fillDims(data.val.dims||{});
+  updateStrLab();updateEmoPreview();toast('已复制到编辑框，保存后生效');
+}
+function setBlood(v){bloodFlag=v;
+  document.querySelectorAll('#rBloodSeg button').forEach(b=>b.classList.toggle('on',parseInt(b.dataset.v)===v));}
+function setEmo(v){emoFlag=v;
+  document.querySelectorAll('#emoSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  updateEmoPreview();}
+function updateStrLab(){
+  const v=parseInt(document.getElementById('rStr').value);
+  document.getElementById('rStrLab').textContent=(isNaN(v)?0:v)+'%';
+  updateEmoPreview();
+}
+function updateEmoPreview(){
+  const secret=document.getElementById('rSecret').checked;
+  const t=activeTheme().colors;
+  const str=parseInt(document.getElementById('rStr').value)||60;
+  document.querySelectorAll('#emoSeg button').forEach(b=>{
+    if(b.classList.contains('on')){
+      const v=b.dataset.v;
+      let c = v==='none'?'#3a3844':darken(secret?t.secret:(v==='hate'?t.hate:v==='love'?t.love:t.neutral),str);
+      b.style.background=c; b.style.color='#16151a';
+    } else { b.style.background=''; b.style.color=''; }
+  });
+  const isNone = emoFlag==='none';
+  document.getElementById('emoStrength').style.display=isNone?'none':'block';
+}
+function openRel(id){
+  if(!state.events.length){toast('请先在下方时间轴新增一个事件');return;}
+  if(state.people.length<2){toast('至少需要两个人物');return;}
+  editingRel=id||null;
+  const r=id?state.rels.find(x=>x.id===id):null;
+  renderDimControls();
+  populateCopySources(r);
+  document.getElementById('relTitle').textContent=id?'编辑关系':'新增关系';
+  // 视角提示
+  const sub=document.getElementById('relSub');
+  if(curView==='truth'){ sub.innerHTML='正在录入<b style="color:var(--gold)">客观真相</b>。伦理关系固定不变；情感状态记录在当前事件上。'; }
+  else if(curView==='reader'){ sub.innerHTML='正在录入 <b style="color:var(--secret)">读者视角</b> 的已揭示认知。用于控制读者在当前事件知道多少，不改变真相。'; }
+  else{ const pn=personById(curView); sub.innerHTML=`正在录入 <b style="color:var(--secret)">${esc(pn.name)} 眼中</b> 的认知。只影响该视角，不改变真相。`; }
+
+  const selA=document.getElementById('rA'),selB=document.getElementById('rB');
+  selA.innerHTML='';selB.innerHTML='';
+  state.people.forEach(p=>{selA.add(new Option(p.name,p.id));selB.add(new Option(p.name,p.id));});
+
+  if(r){
+    selA.value=r.a;selB.value=r.b;selA.disabled=true;selB.disabled=true;
+    document.getElementById('rEthic').value=r.ethic||'';
+    setBlood(r.blood?1:0);
+    const lens=lensForCurrent(r)||r.truth;
+    // 当前事件“本视角本事件”已有值优先，否则用前向填充值打底
+    const own = lens.vals&&lens.vals[curEvent];
+    const fill = stateAt(lens,curEvent);
+    const st = own || fill || {emo:'neutral',secret:false,str:60};
+    setEmo(st.emo); document.getElementById('rSecret').checked=!!st.secret;
+    document.getElementById('rStr').value=st.str||60;
+    document.getElementById('rNote').value = (lens.notes&&lens.notes[curEvent])||'';
+    document.getElementById('rReason').value = (lens.reasons&&lens.reasons[curEvent])||'';
+    fillDims(st.dims||{});
+    // 伦理关系只在真相视角可改
+    document.getElementById('rEthic').disabled = (curView!=='truth');
+    document.querySelectorAll('#rBloodSeg button').forEach(b=>b.disabled=(curView!=='truth'));
+  }else{
+    selA.disabled=false;selB.disabled=false;selB.selectedIndex=Math.min(1,state.people.length-1);
+    document.getElementById('rEthic').value='';document.getElementById('rEthic').disabled=(curView!=='truth');
+    setBlood(0);setEmo('neutral');document.getElementById('rSecret').checked=false;
+    document.getElementById('rStr').value=60;document.getElementById('rNote').value='';document.getElementById('rReason').value='';
+    fillDims({});
+    document.querySelectorAll('#rBloodSeg button').forEach(b=>b.disabled=(curView!=='truth'));
+  }
+  updateStrLab();updateEmoPreview();
+  openMask('relMask');
+}
+function saveRel(){
+  const a=document.getElementById('rA').value,b=document.getElementById('rB').value;
+  if(a===b){toast('不能选同一个人');return;}
+  const ethic=document.getElementById('rEthic').value.trim();
+  const st={emo:emoFlag,secret:document.getElementById('rSecret').checked,
+    str:parseInt(document.getElementById('rStr').value),dims:readDims()};
+  if(emoFlag==='none'){st.secret=false;}
+  const note=document.getElementById('rNote').value.trim();
+  const reason=document.getElementById('rReason').value.trim();
+
+  let r = editingRel ? state.rels.find(x=>x.id===editingRel) : null;
+  if(!r){
+    const exist=state.rels.find(x=>(x.a===a&&x.b===b)||(x.a===b&&x.b===a));
+    if(exist){toast('这两人已有关系，请直接编辑');return;}
+    r={id:uid(),a,b,ethic:'',blood:0,truth:{vals:{},notes:{},reasons:{}},views:{}};
+    state.rels.push(r);
+  }
+  // 伦理仅真相视角写
+  if(curView==='truth'){ r.ethic=ethic; r.blood=bloodFlag; }
+  // 选择写入哪个 lens
+  let lens=lensForWrite(r);
+  lens.vals[curEvent]=st;
+  if(note) lens.notes[curEvent]=note; else delete lens.notes[curEvent];
+  if(reason) lens.reasons[curEvent]=reason; else delete lens.reasons[curEvent];
+
+  closeMask('relMask');save();renderAll();
+}
+function delRel(id){
+  if(!confirm('删除这条关系？（连同各视角认知一并删除）'))return;
+  state.rels=state.rels.filter(r=>r.id!==id);save();renderAll();
+}
+function clearViewOnRel(id){
+  const r=state.rels.find(x=>x.id===id);
+  if(curView==='reader'&&r&&r.reader){
+    if(!confirm('清除读者视角对这条关系的认知？清除后读者视角将不显示这条关系。'))return;
+    delete r.reader;save();renderAll();return;
+  }
+  if(r&&r.views&&r.views[curView]){
+    if(!confirm('清除当前视角对这条关系的认知？清除后该视角将沿用真相。'))return;
+    delete r.views[curView];save();renderAll();
+  }
+}
+function renderRelList(){
+  const box=document.getElementById('relList');
+  if(!curEvent){box.innerHTML='<div class="empty">请先在下方时间轴选择一个事件。</div>';return;}
+  if(!state.rels.length){box.innerHTML='<div class="empty">当前还没有关系。<br>点下方按钮新增。</div>';return;}
+  box.innerHTML='';
+  let shown=0;
+  state.rels.forEach(r=>{
+    const pa=personById(r.a),pb=personById(r.b);if(!pa||!pb)return;
+    const st=relRender(r,curEvent);
+    if(!st)return;
+    const lens=lensForCurrent(r)||{vals:{},notes:{},reasons:{}};
+    const ownsHere = lens.vals&&lens.vals[curEvent];
+    const note=noteAt(lens,curEvent);
+    const reason=directTextAt(lens,'reasons',curEvent);
+    const dsum=dimsSummary(st);
+    const hasView = curView==='reader' ? !!r.reader : (curView!=='truth' && r.views && r.views[curView]);
+    const diff = hasPerspectiveDiff(r,curEvent);
+    shown++;
+    const el=document.createElement('div');el.className='relrow';
+    el.innerHTML=`<span class="x">×</span>
+      <div class="pair"><b>${esc(pa.name)}</b> — <b>${esc(pb.name)}</b>
+        ${r.ethic?`<span class="bloodtag">${r.blood?'血缘·':''}${esc(r.ethic)}</span>`:''}</div>
+      <div class="mini-note">情感
+        <span class="chip" style="background:${emoBg(st)};color:${st?emoColorRaw(st):'var(--ink-dim)'}">${st?emoLabel(st):'不认识'}</span>
+        ${ownsHere?'<span style="color:var(--gold)">·本事件设定</span>':'<span style="color:var(--ink-dim)">·沿用先前</span>'}
+        ${hasView?'<span style="color:var(--secret)">·本视角认知</span>':''}
+        ${diff?'<span style="color:var(--secret)">·与真相不同</span>':''}
+      </div>
+      ${dsum?`<div class="mini-note"><b style="color:var(--ink)">多维：</b>${esc(dsum)}</div>`:''}
+      ${note?`<div class="mini-note">「${esc(note)}」</div>`:''}
+      ${reason?`<div class="mini-note"><b style="color:var(--gold)">变化原因：</b>${esc(reason)}</div>`:''}
+      ${hasView?`<div class="mini-note"><span style="cursor:pointer;color:var(--secret);text-decoration:underline" onclick="event.stopPropagation();clearViewOnRel('${r.id}')">清除此视角认知</span></div>`:''}`;
+    el.querySelector('.x').onclick=(e)=>{e.stopPropagation();delRel(r.id);};
+    el.onclick=()=>openRel(r.id);
+    box.appendChild(el);
+  });
+  if(!shown)box.innerHTML='<div class="empty">当前视角下暂无可见关系。</div>';
+}
+
+function viewLensForEventCard(r){
+  if(curView==='reader')return r.reader;
+  return lensOf(r);
+}
+function pairName(r){
+  const a=personById(r.a),b=personById(r.b);
+  return `${a?a.name:'?'} - ${b?b.name:'?'}`;
+}
+function infoSummary(st){
+  if(!st)return '';
+  const parts=[];
+  ['knows','mistake','hidden'].forEach(k=>{ if(st.dims&&st.dims[k]>0)parts.push(`${DIM_LABELS[k]}${st.dims[k]}%`); });
+  return parts.join(' / ');
+}
+function renderEventCards(){
+  const box=document.getElementById('eventCards');
+  if(!box)return;
+  if(!state.events.length){box.innerHTML='<div class="empty">还没有事件。</div>';return;}
+  box.innerHTML=state.events.map((ev,i)=>{
+    const relChanges=[];
+    const infos=[];
+    state.rels.forEach(r=>{
+      const lens=viewLensForEventCard(r);
+      if(!lens)return;
+      const st=lens.vals&&lens.vals[ev.id];
+      if(st){
+        const dsum=dimsSummary(st,4);
+        const reason=directTextAt(lens,'reasons',ev.id);
+        relChanges.push(`<div><b>${esc(pairName(r))}</b>：${esc(dsum||emoLabel(st))}${reason?`；${esc(reason)}`:''}</div>`);
+        const inf=infoSummary(st);
+        if(inf)infos.push(`<div><b>${esc(pairName(r))}</b>：${esc(inf)}</div>`);
+      }
+    });
+    const turns=state.people.filter(p=>p.states&&p.states[ev.id]).map(p=>`<div><b>${esc(p.name)}</b>：${esc(p.states[ev.id])}</div>`);
+    return `<div class="event-card">
+      <h4>${i+1}. ${esc(ev.name)}</h4>
+      ${ev.desc?`<div class="story-list">${esc(ev.desc)}</div>`:''}
+      ${ev.reader?`<div class="story-list"><b>读者获得：</b>${esc(ev.reader)}</div>`:''}
+      <div class="story-list"><b>关系变化</b>${relChanges.length?relChanges.join(''):'<div>无单独记录</div>'}</div>
+      <div class="story-list"><b>谁知道了什么</b>${infos.length?infos.join(''):'<div>无信息维度变化</div>'}</div>
+      <div class="story-list"><b>性格转折</b>${turns.length?turns.join(''):'<div>无人物状态记录</div>'}</div>
+    </div>`;
+  }).join('');
+}
+function initArcView(){
+  const sel=document.getElementById('arcPerson');
+  const old=sel.value;
+  sel.innerHTML='';
+  state.people.forEach(p=>sel.add(new Option(p.name,p.id)));
+  if(old&&personById(old))sel.value=old;
+  renderArcView();
+}
+function renderArcView(){
+  const box=document.getElementById('arcArea'),sel=document.getElementById('arcPerson');
+  if(!box||!sel)return;
+  const pid=sel.value;
+  if(!pid){box.innerHTML='<div class="empty">请先添加人物。</div>';return;}
+  const p=personById(pid);
+  box.innerHTML=state.events.map((ev,i)=>{
+    const rels=[];
+    state.rels.forEach(r=>{
+      if(r.a!==pid&&r.b!==pid)return;
+      const other=personById(r.a===pid?r.b:r.a);
+      const lens=viewLensForEventCard(r);
+      const st=lens&&lens.vals&&lens.vals[ev.id];
+      if(st){
+        const reason=directTextAt(lens,'reasons',ev.id);
+        rels.push(`<div><b>与${esc(other?other.name:'?')}</b>：${esc(dimsSummary(st,4)||emoLabel(st))}${reason?`；${esc(reason)}`:''}</div>`);
+      }
+    });
+    const stateText=p&&p.states&&p.states[ev.id]?p.states[ev.id]:'';
+    return `<div class="arc-card">
+      <h4>${i+1}. ${esc(ev.name)}</h4>
+      <div class="story-list"><b>状态 / 欲望 / 信念</b>${stateText?`<div>${esc(stateText)}</div>`:'<div>无状态记录</div>'}</div>
+      <div class="story-list"><b>相关关系变化</b>${rels.length?rels.join(''):'<div>无关系变化</div>'}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- 力导向 ---------- */
+let nodes=[];
+function buildNodes(){
+  const W=1000,H=600;const old={};nodes.forEach(n=>old[n.id]=n);
+  let added=false;
+  nodes=state.people.map((p,i)=>{
+    if(old[p.id])return Object.assign(old[p.id],{p});
+    added=true;
+    const ang=i/Math.max(state.people.length,1)*Math.PI*2;
+    return{id:p.id,p,x:W/2+Math.cos(ang)*180,y:H/2+Math.sin(ang)*150,vx:0,vy:0};
+  });
+  return added;
+}
+function activeEdges(){
+  if(!curEvent)return[];
+  return state.rels.map(r=>{
+    const st=relRender(r,curEvent);
+    if(!st)return null;
+    return{r,st,a:r.a,b:r.b};
+  }).filter(Boolean);
+}
+function tick(){
+  const W=1000,H=600,edges=activeEdges();const nm={};nodes.forEach(n=>nm[n.id]=n);
+  for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+    const a=nodes[i],b=nodes[j];let dx=a.x-b.x,dy=a.y-b.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+    const f=9000/(d*d);dx/=d;dy/=d;a.vx+=dx*f;a.vy+=dy*f;b.vx-=dx*f;b.vy-=dy*f;
+  }
+  edges.forEach(e=>{
+    const a=nm[e.a],b=nm[e.b];if(!a||!b)return;
+    let dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+    const str=dimStrength(e.st)||60;
+    let rest=240;
+    if(e.st.emo==='love'||e.st.secret) rest=240-str*1.4;
+    else if(e.st.emo==='hate') rest=200+str*1.0;
+    const f=(d-rest)*0.012;dx/=d;dy/=d;a.vx+=dx*f;a.vy+=dy*f;b.vx-=dx*f;b.vy-=dy*f;
+  });
+  let energy=0;
+  nodes.forEach(n=>{
+    n.vx+=(W/2-n.x)*0.002;n.vy+=(H/2-n.y)*0.002;n.vx*=0.82;n.vy*=0.82;
+    if(!n.dragging){n.x+=n.vx;n.y+=n.vy;}
+    n.x=Math.max(40,Math.min(W-40,n.x));n.y=Math.max(40,Math.min(H-40,n.y));
+    energy+=Math.abs(n.vx)+Math.abs(n.vy);
+  });
+  return energy;
+}
+// 视角聚焦：选了角色视角时，淡化与视角人物无关、且彼此都不被视角认识的节点？此处仅做：高亮视角人物
+function renderGraph(){
+  const added=buildNodes();
+  if(added) wakeLayout(90);   // 仅当出现新人物时，自动排布一次后停
+  const svg=document.getElementById('svg');
+  const edges=activeEdges();const nm={};nodes.forEach(n=>nm[n.id]=n);
+  let h='';
+  edges.forEach(e=>{
+    const a=nm[e.a],b=nm[e.b];if(!a||!b)return;
+    const col=emoColorRaw(e.st);
+    const w=2+(dimStrength(e.st)/100)*3.5;
+    const dash=e.r.blood?'':'6,5';
+    const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;const lab=e.r.ethic||'';
+    const diff=hasPerspectiveDiff(e.r,curEvent);
+    if(diff)h+=`<line class="diff-edge" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="var(--secret)" stroke-width="${w+5}" stroke-dasharray="3,5" opacity="0.55"/>`;
+    h+=`<line class="main-edge" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${col}" stroke-width="${w}" ${dash?`stroke-dasharray="${dash}"`:''} opacity="0.9"/>`;
+    if(lab)h+=`<rect x="${mx-lab.length*5.5-4}" y="${my-9}" width="${lab.length*11+8}" height="16" rx="4" fill="#1e1d24" opacity="0.85"/><text class="edge-label" x="${mx}" y="${my+3}">${esc(lab)}</text>`;
+    if(diff)h+=`<text class="diff-note" x="${mx}" y="${my-16}">视角差异</text>`;
+  });
+  nodes.forEach(n=>{
+    const p=n.p;const isView = curView!=='truth' && curView===n.id;
+    h+=`<g class="node${selPerson===n.id?' sel':''}" data-id="${n.id}" transform="translate(${n.x},${n.y})">
+      <circle class="ring" r="30"/>
+      ${isView?`<circle r="28" fill="none" stroke="var(--secret)" stroke-width="2" stroke-dasharray="3,3"/>`:''}
+      <circle r="22" fill="${p.color}" stroke="#16151a" stroke-width="3"/>
+      <text y="40">${esc(p.name)}</text></g>`;
+  });
+  svg.innerHTML=h;
+  svg.querySelectorAll('.node').forEach(g=>{
+    const id=g.dataset.id;
+    g.querySelectorAll('circle')[g.querySelectorAll('circle').length-1].onclick=(e)=>{
+      e.stopPropagation();selPerson=selPerson===id?null:id;switchTab('people');renderPeople();
+    };
+    g.onmousedown=(e)=>startDrag(e,id);
+  });
+  const nb=document.getElementById('nowBar');
+  if(curEvent){const ev=state.events.find(e=>e.id===curEvent);nb.style.display='block';
+    nb.innerHTML=`<div class="et">${esc(ev.name)}</div>${ev.desc?`<div class="ed">${esc(ev.desc)}</div>`:''}${ev.reader?`<div class="ed reader-info"><b>读者已知：</b>${esc(ev.reader)}</div>`:''}`;}
+  else{nb.style.display='none';nb.innerHTML='';}
+}
+let dragId=null;
+function svgPoint(e){const svg=document.getElementById('svg');const r=svg.getBoundingClientRect();
+  const vb=svg.viewBox.baseVal;return{x:(e.clientX-r.left)/r.width*vb.width,y:(e.clientY-r.top)/r.height*vb.height};}
+function startDrag(e,id){e.preventDefault();dragId=id;const n=nodes.find(x=>x.id===id);if(n)n.dragging=true;
+  document.getElementById('svg').classList.add('dragging');}
+document.addEventListener('mousemove',e=>{if(!dragId)return;const pt=svgPoint(e);
+  const n=nodes.find(x=>x.id===dragId);if(n){n.x=pt.x;n.y=pt.y;n.vx=0;n.vy=0;renderPositions();}});
+document.addEventListener('mouseup',()=>{if(dragId){const n=nodes.find(x=>x.id===dragId);if(n)n.dragging=false;}
+  dragId=null;document.getElementById('svg').classList.remove('dragging');});
+let settleFrames=0;   // 剩余布局帧数（仅载入/数据变化后自动排布用）
+function wakeLayout(frames){ settleFrames=Math.max(settleFrames, frames||90); ensureLoop(); }
+let looping=false;
+function ensureLoop(){ if(!looping){ looping=true; requestAnimationFrame(loop); } }
+function loop(){
+  if(settleFrames>0){
+    const energy=tick();
+    renderPositions();
+    settleFrames--;
+    if(energy<0.6) settleFrames=0;   // 已稳定，提前停
+    requestAnimationFrame(loop);
+  }else{
+    renderPositions();
+    looping=false;   // 停下，节点不再自动移动
+  }
+}
+function renderPositions(){
+  const svg=document.getElementById('svg');const nm={};nodes.forEach(n=>nm[n.id]=n);
+  svg.querySelectorAll('.node').forEach(g=>{const n=nm[g.dataset.id];if(n)g.setAttribute('transform',`translate(${n.x},${n.y})`);});
+  const edges=activeEdges();const lines=svg.querySelectorAll('.main-edge');
+  edges.forEach((e,i)=>{const a=nm[e.a],b=nm[e.b];const ln=lines[i];
+    if(a&&b&&ln){ln.setAttribute('x1',a.x);ln.setAttribute('y1',a.y);ln.setAttribute('x2',b.x);ln.setAttribute('y2',b.y);}});
+  const diffLines=svg.querySelectorAll('.diff-edge');let di=0;
+  edges.forEach(e=>{if(!hasPerspectiveDiff(e.r,curEvent))return;const a=nm[e.a],b=nm[e.b];const ln=diffLines[di++];
+    if(a&&b&&ln){ln.setAttribute('x1',a.x);ln.setAttribute('y1',a.y);ln.setAttribute('x2',b.x);ln.setAttribute('y2',b.y);}});
+  const texts=svg.querySelectorAll('.edge-label');const rects=svg.querySelectorAll('rect');let ti=0;
+  edges.forEach(e=>{if(!e.r.ethic)return;const a=nm[e.a],b=nm[e.b];const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    const t=texts[ti],rc=rects[ti];if(t){t.setAttribute('x',mx);t.setAttribute('y',my+3);}
+    if(rc){rc.setAttribute('x',mx-e.r.ethic.length*5.5-4);rc.setAttribute('y',my-9);}ti++;});
+  const diffNotes=svg.querySelectorAll('.diff-note');di=0;
+  edges.forEach(e=>{if(!hasPerspectiveDiff(e.r,curEvent))return;const a=nm[e.a],b=nm[e.b];const t=diffNotes[di++];
+    if(a&&b&&t){t.setAttribute('x',(a.x+b.x)/2);t.setAttribute('y',(a.y+b.y)/2-16);}});
+}
+
+/* ---------- 折线图 ---------- */
+function initChartSelectors(){
+  const cA=document.getElementById('cA'),cB=document.getElementById('cB');
+  const va=cA.value,vb=cB.value;
+  cA.innerHTML='';cB.innerHTML='';
+  state.people.forEach(p=>{cA.add(new Option(p.name,p.id));cB.add(new Option(p.name,p.id));});
+  if(va&&personById(va))cA.value=va; if(vb&&personById(vb))cB.value=vb;
+  else if(state.people.length>1)cB.selectedIndex=1;
+  renderChart();
+}
+// 把情感状态映射到一个数值，画曲线用：敌对负、普通0、亲密正；隐秘单独标点
+function emoToY(st){
+  if(!st||st.emo==='none')return null;
+  const s=(st.str||60)/100;
+  if(st.emo==='hate')return -s;
+  if(st.emo==='love')return s;
+  return 0; // neutral
+}
+function renderChart(){
+  const area=document.getElementById('chartArea');
+  if(state.people.length<2||state.events.length<1){area.innerHTML='<div class="empty">需要至少两个人物和一个事件。</div>';return;}
+  const a=document.getElementById('cA').value,b=document.getElementById('cB').value;
+  if(a===b){area.innerHTML='<div class="empty">请选择两个不同的人物。</div>';return;}
+  const r=state.rels.find(x=>(x.a===a&&x.b===b)||(x.a===b&&x.b===a));
+  if(!r){area.innerHTML='<div class="empty">这两人之间还没有建立关系。</div>';return;}
+  const lens = curView==='reader' ? (r.reader||{vals:{},notes:{},reasons:{}}) : (lensForCurrent(r)||r.truth);
+
+  const W=290,H=180,padL=30,padR=14,padT=14,padB=46;
+  const n=state.events.length;
+  const xAt=i=>padL+(n<=1?(W-padL-padR)/2:i*(W-padL-padR)/(n-1));
+  const yAt=v=>padT+(1-(v+1)/2)*(H-padT-padB); // v:-1..1
+  // 逐事件取前向填充值
+  const pts=state.events.map((ev,i)=>{
+    const st=stateAt(lens,ev.id);
+    return{i,ev,st,y:emoToY(st)};
+  });
+  // 折线只连有值的点
+  let path='',dots='',secretMarks='';
+  let prev=null;
+  pts.forEach(p=>{
+    if(p.y===null){prev=null;return;}
+    const x=xAt(p.i),y=yAt(p.y);
+    if(prev)path+=`<line x1="${prev.x}" y1="${prev.y}" x2="${x}" y2="${y}" stroke="var(--gold)" stroke-width="2"/>`;
+    const col=emoColorRaw(p.st);
+    dots+=`<circle cx="${x}" cy="${y}" r="5" fill="${col}" stroke="#16151a" stroke-width="2"><title>${esc(p.ev.name)}：${emoLabel(p.st)}</title></circle>`;
+    if(p.st.secret)secretMarks+=`<circle cx="${x}" cy="${y}" r="9" fill="none" stroke="${activeTheme().colors.secret}" stroke-width="1.5" stroke-dasharray="2,2"/>`;
+    prev={x,y};
+  });
+  // 轴线
+  const zeroY=yAt(0),topY=yAt(1),botY=yAt(-1);
+  const labels=pts.map(p=>{
+    const x=xAt(p.i);
+    const short=p.ev.name.length>4?p.ev.name.slice(0,4)+'…':p.ev.name;
+    return `<text x="${x}" y="${H-padB+16}" fill="var(--ink-dim)" font-size="9" text-anchor="middle" transform="rotate(0 ${x} ${H-padB+16})">${esc(short)}</text>`;
+  }).join('');
+  const pa=personById(a),pb=personById(b);
+  const viewName=curView==='reader'?'读者':(curView!=='truth'&&personById(curView)?personById(curView).name:'');
+  area.innerHTML=`
+    <div class="chart-wrap">
+      <div class="ct"><b style="color:var(--gold)">${esc(pa.name)}</b> 与 <b style="color:var(--gold)">${esc(pb.name)}</b>
+        ${curView!=='truth'?`<span style="color:var(--secret)">（${esc(viewName)}视角）</span>`:''}</div>
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">
+        <line x1="${padL}" y1="${topY}" x2="${W-padR}" y2="${topY}" stroke="#2a2833" stroke-width="1"/>
+        <line x1="${padL}" y1="${zeroY}" x2="${W-padR}" y2="${zeroY}" stroke="#3a3844" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="${padL}" y1="${botY}" x2="${W-padR}" y2="${botY}" stroke="#2a2833" stroke-width="1"/>
+        <text x="4" y="${topY+3}" fill="#4caf6e" font-size="9">亲密</text>
+        <text x="4" y="${zeroY+3}" fill="var(--ink-dim)" font-size="9">普通</text>
+        <text x="4" y="${botY+3}" fill="#cf4b3a" font-size="9">敌对</text>
+        ${path}${secretMarks}${dots}${labels}
+      </svg>
+      <div class="mini-note">圆点颜色对应情感分类，紫色虚圈表示该事件为隐秘交情。线段断开表示当时尚未认识。</div>
+    </div>`;
+}
+
+/* ---------- 通用 ---------- */
+function openMask(id){document.getElementById(id).classList.add('on');}
+function closeMask(id){document.getElementById(id).classList.remove('on');}
+document.querySelectorAll('.mask').forEach(m=>m.onclick=e=>{if(e.target===m)m.classList.remove('on');});
+
+/* ---------- 缩放 ---------- */
+function applyScale(){
+  // 用 zoom 等比缩放整个界面，对所有写死 px 的文字和控件都生效
+  document.body.style.zoom = fontScale;
+  // 兼容不支持 zoom 的浏览器，回退到 transform
+  if(!('zoom' in document.body.style)){
+    document.body.style.transform='scale('+fontScale+')';
+    document.body.style.transformOrigin='top left';
+    document.body.style.width=(100/fontScale)+'%';
+    document.body.style.height=(100/fontScale)+'%';
+  }
+  const lab=document.getElementById('zoomLab');
+  if(lab)lab.textContent=Math.round(fontScale*100)+'%';
+}
+function applyGraphScale(){
+  graphScale=Math.max(0.45,Math.min(2.4,graphScale||1));
+  const svg=document.getElementById('svg');
+  if(svg){
+    const w=1000/graphScale,h=600/graphScale;
+    svg.setAttribute('viewBox',`${(1000-w)/2} ${(600-h)/2} ${w} ${h}`);
+  }
+  const lab=document.getElementById('graphZoomLab');
+  if(lab)lab.textContent=Math.round(graphScale*100)+'%';
+}
+function graphZoom(dir){
+  graphScale=+(graphScale+dir*0.1).toFixed(2);
+  applyGraphScale();save();
+}
+function resetGraphZoom(){
+  graphScale=1;applyGraphScale();save();
+}
+function zoom(dir){
+  fontScale=Math.max(0.6,Math.min(2,+(fontScale+dir*0.1).toFixed(2)));
+  applyScale();save();
+}
+// 键盘快捷键 Ctrl/Cmd +/-/0
+document.addEventListener('keydown',e=>{
+  if(!(e.ctrlKey||e.metaKey))return;
+  if(e.key==='='||e.key==='+'){e.preventDefault();zoom(1);}
+  else if(e.key==='-'){e.preventDefault();zoom(-1);}
+  else if(e.key==='0'){e.preventDefault();fontScale=1;applyScale();save();}
+});
+
+/* ---------- 图例：拖动 + 最小化 ---------- */
+function toggleLegend(e){
+  if(e)e.stopPropagation();
+  const lg=document.getElementById('legend');
+  lg.classList.toggle('min');
+  document.getElementById('legendMin').textContent = lg.classList.contains('min')?'＋':'－';
+}
+(function initLegendDrag(){
+  const bar=document.getElementById('legendBar');
+  const lg=document.getElementById('legend');
+  if(!bar||!lg)return;
+  let sx,sy,ox,oy,dragging=false;
+  bar.addEventListener('mousedown',e=>{
+    if(e.target.id==='legendMin')return;
+    dragging=true;
+    const sc=document.body.style.zoom?parseFloat(document.body.style.zoom):1;
+    const r=lg.getBoundingClientRect();
+    const pr=lg.parentElement.getBoundingClientRect();
+    ox=(r.left-pr.left)/sc; oy=(r.top-pr.top)/sc;
+    sx=e.clientX; sy=e.clientY;
+    lg.style.bottom='auto'; lg.style.left=ox+'px'; lg.style.top=oy+'px';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    const sc=document.body.style.zoom?parseFloat(document.body.style.zoom):1;
+    const nx=ox+(e.clientX-sx)/sc, ny=oy+(e.clientY-sy)/sc;
+    lg.style.left=Math.max(0,nx)+'px'; lg.style.top=Math.max(0,ny)+'px';
+  });
+  document.addEventListener('mouseup',()=>{dragging=false;});
+})();
+
+/* ---------- 配色主题 ---------- */
+const EMO_KEYS=[['hate','敌对'],['neutral','认识·普通'],['love','亲密'],['secret','隐秘交情']];
+function openTheme(){ renderThemeUI(); openMask('themeMask'); }
+function renderThemeUI(){
+  const sel=document.getElementById('themeSel');
+  sel.innerHTML='';
+  themes.forEach(t=>sel.add(new Option(t.name,t.id)));
+  sel.value=curTheme;
+  const t=activeTheme();
+  const ed=document.getElementById('themeEditor');
+  // 主题名编辑
+  let h=`<label>主题名称</label><input id="themeName" value="${esc(t.name)}" oninput="renameTheme(this.value)">`;
+  h+=`<label style="margin-top:14px">四类情感基准色</label>`;
+  EMO_KEYS.forEach(([k,label])=>{
+    const base=t.colors[k];
+    // 预览：弱中强三档深浅
+    const pv=[35,60,100].map(s=>`<i style="background:${darken(base,s)}"></i>`).join('');
+    h+=`<div class="theme-color-row">
+      <span class="nm">${label}</span>
+      <span class="preview" title="弱→强">${pv}</span>
+      <input type="color" value="${base}" oninput="setThemeColor('${k}',this.value)">
+    </div>`;
+  });
+  ed.innerHTML=h;
+}
+function switchTheme(id){ curTheme=id; save(); renderThemeUI(); renderAll(); }
+function setThemeColor(k,v){ activeTheme().colors[k]=v; save(); renderThemeUI(); renderAll(); }
+function renameTheme(v){ activeTheme().name=v||'未命名'; save();
+  const sel=document.getElementById('themeSel'); const o=[...sel.options].find(o=>o.value===curTheme); if(o)o.text=activeTheme().name; }
+function newTheme(){
+  const t={id:uid(),name:'新主题',colors:{hate:'#cf4b3a',neutral:'#c9c6d2',love:'#4caf6e',secret:'#a06cd5'}};
+  themes.push(t); curTheme=t.id; save(); renderThemeUI(); renderAll(); toast('已新建主题');
+}
+function dupTheme(){
+  const src=activeTheme();
+  const t={id:uid(),name:src.name+' 副本',colors:{...src.colors}};
+  themes.push(t); curTheme=t.id; save(); renderThemeUI(); renderAll(); toast('已复制');
+}
+function delTheme(){
+  if(themes.length<=1){toast('至少保留一套主题');return;}
+  if(!confirm('删除当前主题？'))return;
+  themes=themes.filter(t=>t.id!==curTheme); curTheme=themes[0].id;
+  save(); renderThemeUI(); renderAll();
+}
+function resetTheme(){
+  const def=DEFAULT_THEMES.find(d=>d.id===curTheme);
+  if(def){ activeTheme().colors={...def.colors}; save(); renderThemeUI(); renderAll(); toast('已恢复默认'); }
+  else toast('这是自定义主题，没有内置默认');
+}
+
+function renderLegend(){
+  const box=document.getElementById('legendEmo');
+  if(!box)return;
+  const t=activeTheme().colors;
+  const items=[['hate','敌对'],['neutral','认识·普通'],['love','亲密'],['secret','私下有交情（隐秘）']];
+  box.innerHTML=items.map(([k,label])=>{
+    const sw=[35,70,100].map(s=>`<i class="sw" style="background:${darken(t[k],s)};width:9px"></i>`).join('');
+    return `<div class="ki"><span style="display:flex;gap:2px">${sw}</span>${label}</div>`;
+  }).join('');
+}
+
+function renderAll(){
+  renderViewBar();renderLegend();renderPeople();renderRelList();renderTimeline();renderGraph();
+  if(document.getElementById('panel-chart').style.display!=='none')renderChart();
+  if(document.getElementById('panel-events').style.display!=='none')renderEventCards();
+  if(document.getElementById('panel-arc').style.display!=='none')renderArcView();
+}
+
+/* ---------- 导入导出 ---------- */
+function exportData(){
+  const blob=new Blob([JSON.stringify({state,curEvent,curView,themes,curTheme,fontScale,graphScale},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='人物关系图谱_'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('已导出存档');
+}
+function importData(e){
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const o=JSON.parse(r.result);state=o.state||state;curEvent=o.curEvent||null;
+    curView=o.curView||'truth';if(o.themes)themes=o.themes;if(o.curTheme)curTheme=o.curTheme;
+    if(o.fontScale)fontScale=o.fontScale;if(o.graphScale)graphScale=o.graphScale;normalizeState();applyScale();applyGraphScale();save();renderAll();toast('导入成功');}catch(err){toast('文件格式不对');}};
+  r.readAsText(f);e.target.value='';
+}
+function resetAll(){
+  if(!confirm('清空所有数据？此操作不可恢复，建议先导出存档。'))return;
+  state={people:[],events:[],rels:[]};curEvent=null;curView='truth';selPerson=null;graphScale=1;applyGraphScale();
+  save();renderAll();toast('已清空');
+}
+
+/* ---------- 示例 ---------- */
+function loadDemo(){
+  if(state.people.length&&!confirm('载入示例会覆盖当前数据，继续？'))return;
+  const P=(name,role,color,note)=>({id:uid(),name,role,color,note});
+  const shen=P('沈砚','长公子','#c9a86a','表面温和，内里多疑');
+  const lin=P('林霜','幕僚','#5d8aa8','冷静，藏锋');
+  const su=P('苏晚','沈砚之妹','#d8627a','天真，逐渐看清家族');
+  const cui=P('崔越','政敌','#cf4b3a','野心，步步紧逼');
+  state.people=[shen,lin,su,cui];
+  const e1={id:uid(),name:'初入府邸',desc:'林霜受聘成为沈砚幕僚，彼此试探。'};
+  const e2={id:uid(),name:'共谋夜话',desc:'两人定计对付崔越，信任渐生。'};
+  const e3={id:uid(),name:'祠堂对峙',desc:'苏晚得知兄长隐瞒，关系出现裂痕。'};
+  const e4={id:uid(),name:'城门之变',desc:'崔越发难，林霜立场成谜。'};
+  state.events=[e1,e2,e3,e4];
+  const ev=state.events;
+  const S=(emo,secret,str)=>({emo,secret:!!secret,str:str||60});
+  const mk=(a,b,ethic,blood,truthSeq,views)=>{
+    const r={id:uid(),a:a.id,b:b.id,ethic,blood,truth:{vals:{},notes:{}},views:{}};
+    Object.entries(truthSeq).forEach(([i,o])=>{r.truth.vals[ev[i].id]=o.s;if(o.n)r.truth.notes[ev[i].id]=o.n;});
+    if(views)views.forEach(({viewer,seq})=>{
+      r.views[viewer.id]={vals:{},notes:{}};
+      Object.entries(seq).forEach(([i,o])=>{r.views[viewer.id].vals[ev[i].id]=o.s;if(o.n)r.views[viewer.id].notes[ev[i].id]=o.n;});
+    });
+    return r;
+  };
+  state.rels=[
+    mk(shen,su,'兄妹',1,{0:{s:S('love',0,80),n:'兄妹情深'},2:{s:S('neutral',0,50),n:'隐瞒被揭，疏远'}}),
+    // 林霜与崔越真相是隐秘交情（暗通），但在沈砚眼中是敌对
+    mk(lin,cui,'旧识',0,
+      {0:{s:S('neutral',0,40)},3:{s:S('love',1,70),n:'真相：早有私下往来'}},
+      [ {viewer:shen, seq:{0:{s:S('neutral',0,40)},3:{s:S('hate',0,80),n:'沈砚以为林霜与崔越势不两立'}}} ]
+    ),
+    mk(shen,lin,'主从',0,{0:{s:S('neutral',0,30),n:'初次试探'},1:{s:S('love',0,60),n:'渐生信任'},3:{s:S('hate',0,55),n:'倒戈疑云'}}),
+    mk(shen,cui,'政敌',0,{0:{s:S('hate',0,60)},3:{s:S('hate',0,95),n:'正面交锋'}}),
+    mk(lin,su,'相识',0,{1:{s:S('neutral',0,40)},2:{s:S('love',0,50),n:'苏晚向林霜倾诉'}})
+  ];
+  curEvent=e1.id;curView='truth';save();renderAll();wakeLayout(120);
+  toast('示例已载入：试试切换视角到「沈砚 眼中」，看林霜与崔越的关系差异');
+}
+
+/* ---------- 启动 ---------- */
+load();applyScale();applyGraphScale();buildNodes();renderAll();wakeLayout(120);
+window.addEventListener('resize',()=>renderTimeline());
+</script>
+</body>
+</html>
