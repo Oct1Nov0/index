@@ -1379,7 +1379,7 @@ function evPoint(e){
 }
 function svgPoint(e){const svg=document.getElementById('svg');const r=svg.getBoundingClientRect();
   const vb=svg.viewBox.baseVal;const pt=evPoint(e);
-  return{x:(pt.clientX-r.left)/r.width*vb.width,y:(pt.clientY-r.top)/r.height*vb.height};}
+  return{x:vb.x+(pt.clientX-r.left)/r.width*vb.width, y:vb.y+(pt.clientY-r.top)/r.height*vb.height};}
 function startDrag(e,id){e.preventDefault();dragId=id;const n=nodes.find(x=>x.id===id);if(n)n.dragging=true;
   document.getElementById('svg').classList.add('dragging');}
 function moveDrag(e){if(!dragId)return;const pt=svgPoint(e);
