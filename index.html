@@ -78,7 +78,18 @@
   #graph svg.dragging{cursor:grabbing}
 
   aside{width:330px;border-left:1px solid var(--line);background:var(--bg-soft);
-    display:flex;flex-direction:column;overflow:hidden}
+    display:flex;flex-direction:column;overflow:hidden;transition:width .22s ease}
+  aside.collapsed{width:0;border-left:none}
+  .tab-collapse{flex:0 0 38px;color:var(--ink-dim);font-size:15px}
+  .tab-collapse:hover{color:var(--gold)}
+  .sidebar-reopen{position:absolute;top:50%;right:0;transform:translateY(-50%);
+    z-index:7;display:none;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+    background:var(--bg-panel);border:1px solid var(--line);border-right:none;
+    border-radius:9px 0 0 9px;padding:12px 7px;color:var(--ink-soft);transition:.15s}
+  .sidebar-reopen:hover{color:var(--gold);border-color:var(--gold-dim)}
+  .sidebar-reopen .ro-text{writing-mode:vertical-rl;font-size:12px;letter-spacing:.15em}
+  .sidebar-reopen .ro-arrow{font-size:14px}
+  aside.collapsed + .sidebar-reopen{display:flex}
   .tabs{display:flex;border-bottom:1px solid var(--line)}
   .tab{flex:1;text-align:center;padding:12px 0;font-size:13px;cursor:pointer;
     color:var(--ink-dim);border-bottom:2px solid transparent;transition:.15s}
@@ -240,6 +251,82 @@
   .perspective-block{background:rgba(160,108,213,.08);border:1px solid rgba(160,108,213,.3);
     border-radius:9px;padding:11px 12px;margin:12px 0}
   .perspective-block .pt{font-size:12px;color:var(--secret);margin-bottom:8px}
+
+  /* ============ 移动端：手机竖屏 ============ */
+  @media (max-width:680px){
+    /* 顶栏：标题缩小，操作按钮区横向可滚 */
+    header{height:auto;min-height:50px;flex-wrap:wrap;gap:8px;padding:8px 12px}
+    header h1{font-size:16px;flex:1 1 100%}
+    .top-actions{margin-left:0;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;
+      padding-bottom:4px;gap:7px}
+    .top-actions::-webkit-scrollbar{height:0}
+    .btn{padding:8px 12px;font-size:13px}
+    .btn.sm{padding:7px 11px;font-size:12px}
+    .zoom-grp{flex-shrink:0}
+
+    /* 视角条：占满、字号略大，便于点选 */
+    .viewbar{height:auto;min-height:44px;padding:7px 12px;flex-wrap:wrap;gap:7px}
+    .viewbar .vlab{font-size:12px}
+    .viewbar select{flex:1;min-width:0}
+    #viewHint{display:none}
+
+    /* 主区改为纵向：图谱占满，侧栏变底部抽屉 */
+    .stage{flex-direction:column;height:calc(100vh - 50px - 44px - 96px);min-height:300px}
+    #graph{flex:1;width:100%}
+
+    aside{position:fixed;left:0;right:0;bottom:0;width:auto;max-height:72vh;
+      border-left:none;border-top:1px solid var(--line);border-radius:16px 16px 0 0;
+      transform:translateY(calc(100% - 46px));transition:transform .26s ease;z-index:30;
+      box-shadow:0 -8px 30px rgba(0,0,0,.45)}
+    aside.sheet-open{transform:translateY(0)}
+    aside.collapsed{width:auto;transform:translateY(calc(100% - 46px));border-top:1px solid var(--line)}
+    /* 抽屉抓手 */
+    aside::before{content:"";position:absolute;top:7px;left:50%;transform:translateX(-50%);
+      width:38px;height:4px;border-radius:3px;background:var(--line)}
+    .tabs{margin-top:14px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .tab{flex:0 0 auto;padding:11px 16px;font-size:13px}
+    .tab-collapse{display:none}
+    .panel{max-height:calc(72vh - 60px)}
+
+    /* 桌面版的展开窄条在手机上不用 */
+    .sidebar-reopen{display:none!important}
+    aside.collapsed + .sidebar-reopen{display:none!important}
+
+    /* 底部唤出抽屉的标签按钮 */
+    .sheet-tab{display:flex}
+
+    /* 事件轴压缩 */
+    .timeline{height:96px}
+    .tl-head{padding:6px 12px 2px;flex-wrap:wrap;gap:4px}
+    .tl-head .hint{font-size:10px;flex:1 1 100%}
+    .tl-track-wrap{padding:0 12px 8px}
+    .tl-track{height:60px}
+    .ev .knob{margin-top:22px}
+    .ev .lab{max-width:70px}
+
+    /* 图谱缩放控件移到左上，避免和图例重叠 */
+    .graph-zoom{top:8px!important;left:8px!important;right:auto!important}
+    .legend{bottom:10px;left:10px;font-size:11px}
+    .now-bar{max-width:62vw}
+
+    /* 模态占满宽度、可滚动 */
+    .modal{width:94vw;max-height:86vh;padding:18px}
+    .row{flex-wrap:wrap}
+    .copy-row{flex-wrap:wrap}
+
+    /* 触摸友好：节点和事件点更大热区 */
+    .node text{font-size:14px}
+  }
+  /* 底部唤出抽屉的悬浮标签，仅移动端显示 */
+  .sheet-tab{display:none;position:fixed;bottom:0;left:0;right:0;z-index:25;
+    align-items:center;justify-content:center;gap:8px;height:0}
+  @media (max-width:680px){
+    .sheet-handle{position:fixed;right:14px;bottom:108px;z-index:28;
+      width:52px;height:52px;border-radius:50%;background:var(--gold);color:#2a230f;
+      border:none;font-size:22px;box-shadow:0 6px 18px rgba(0,0,0,.4);cursor:pointer;
+      display:flex;align-items:center;justify-content:center}
+    .sheet-handle.hide{display:none}
+  }
 </style>
 </head>
 <body>
@@ -312,13 +399,14 @@
     </div>
   </div>
 
-  <aside>
+  <aside id="sidebar">
     <div class="tabs">
       <div class="tab on" data-tab="people" onclick="switchTab('people')">人物</div>
       <div class="tab" data-tab="rel" onclick="switchTab('rel')">关系</div>
       <div class="tab" data-tab="chart" onclick="switchTab('chart')">曲线</div>
       <div class="tab" data-tab="events" onclick="switchTab('events')">事件</div>
       <div class="tab" data-tab="arc" onclick="switchTab('arc')">弧光</div>
+      <div class="tab tab-collapse" onclick="toggleSidebar()" title="收起侧栏">⟩</div>
     </div>
 
     <div class="panel" id="panel-people">
@@ -355,6 +443,9 @@
       <div id="arcArea"></div>
     </div>
   </aside>
+  <div class="sidebar-reopen" id="sidebarReopen" onclick="toggleSidebar()" title="展开侧栏">
+    <span class="ro-arrow">⟨</span><span class="ro-text">面板</span>
+  </div>
 </div>
 
 <div class="timeline">
@@ -364,6 +455,8 @@
   </div>
   <div class="tl-track-wrap"><div class="tl-track" id="tlTrack"><div class="tl-line"></div></div></div>
 </div>
+
+<button class="sheet-handle" id="sheetHandle" onclick="toggleSheet()" title="面板">☰</button>
 
 <!-- 人物模态 -->
 <div class="mask" id="personMask"><div class="modal">
@@ -411,6 +504,10 @@
   <div class="row">
     <div><label>人物 A</label><select id="rA"></select></div>
     <div><label>人物 B</label><select id="rB"></select></div>
+  </div>
+  <div class="copy-row" id="templateRow">
+    <div style="flex:1"><label>套用某对已有关系（含各视角、各事件整套数据）</label><select id="templateSource"></select></div>
+    <button class="btn sm" onclick="applyTemplate()" type="button">套用</button>
   </div>
   <div class="copy-row">
     <div style="flex:1"><label>从已有视角复制</label><select id="copySource"></select></div>
@@ -678,6 +775,25 @@ function switchTab(t){
   if(t==='events') renderEventCards();
   if(t==='arc') initArcView();
 }
+function isMobile(){ return window.matchMedia('(max-width:680px)').matches; }
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  if(isMobile()){ toggleSheet(); return; }
+  sb.classList.toggle('collapsed');
+  setTimeout(()=>{ if(typeof wakeLayout==='function') wakeLayout(40); },240);
+}
+function toggleSheet(){
+  const sb=document.getElementById('sidebar');
+  const open=sb.classList.toggle('sheet-open');
+  const h=document.getElementById('sheetHandle');
+  if(h)h.classList.toggle('hide',open);
+}
+function closeSheet(){
+  const sb=document.getElementById('sidebar');
+  sb.classList.remove('sheet-open');
+  const h=document.getElementById('sheetHandle');
+  if(h)h.classList.remove('hide');
+}
 
 /* ---------- 视角 ---------- */
 function renderViewBar(){
@@ -892,6 +1008,51 @@ function copyFromSource(){
   fillDims(data.val.dims||{});
   updateStrLab();updateEmoPreview();toast('已复制到编辑框，保存后生效');
 }
+// 跨人物对：把某对已有关系的整套数据套用到新建的这对人物上
+function populateTemplateSources(isNew){
+  const row=document.getElementById('templateRow');
+  const sel=document.getElementById('templateSource');
+  if(!row||!sel)return;
+  // 只有新建关系时才显示套用入口
+  row.style.display = isNew ? 'flex' : 'none';
+  if(!isNew)return;
+  sel.innerHTML='';
+  const usable=state.rels.filter(r=>r.truth&&r.truth.vals&&Object.keys(r.truth.vals).length);
+  if(!usable.length){ sel.add(new Option('暂无可套用的已有关系','')); sel.disabled=true; return; }
+  sel.disabled=false;
+  sel.add(new Option('不套用，手动填写',''));
+  usable.forEach(r=>{
+    const pa=personById(r.a),pb=personById(r.b);
+    if(!pa||!pb)return;
+    const nViews=r.views?Object.keys(r.views).length:0;
+    const tag = (r.ethic?r.ethic+' · ':'') + Object.keys(r.truth.vals).length + '个事件' + (nViews?(' · '+nViews+'个视角'):'');
+    sel.add(new Option(`${pa.name}—${pb.name}（${tag}）`, r.id));
+  });
+}
+function applyTemplate(){
+  const srcId=document.getElementById('templateSource').value;
+  if(!srcId){toast('请先选择一对要套用的关系');return;}
+  const src=state.rels.find(r=>r.id===srcId);
+  if(!src){toast('没有找到来源关系');return;}
+  const a=document.getElementById('rA').value, b=document.getElementById('rB').value;
+  if(a===b){toast('不能选同一个人');return;}
+  const exist=state.rels.find(x=>(x.a===a&&x.b===b)||(x.a===b&&x.b===a));
+  if(exist){toast('这两人已有关系，请直接编辑');return;}
+  // 深拷贝整套数据，重新挂到新人物对上
+  const clone=JSON.parse(JSON.stringify({truth:src.truth,reader:src.reader,views:src.views,ethic:src.ethic,blood:src.blood}));
+  const nr={id:uid(),a,b,ethic:clone.ethic||'',blood:clone.blood||0,
+    truth:clone.truth||{vals:{},notes:{},reasons:{}}, views:clone.views||{}};
+  if(clone.reader)nr.reader=clone.reader;
+  normalizeLens(nr.truth); if(nr.reader)normalizeLens(nr.reader);
+  Object.values(nr.views).forEach(normalizeLens);
+  state.rels.push(nr);
+  editingRel=nr.id;
+  save();
+  closeMask('relMask');
+  renderAll();
+  const pa=personById(a),pb=personById(b),sp=personById(src.a),sq=personById(src.b);
+  toast(`已把 ${sp.name}—${sq.name} 的整套关系套用到 ${pa.name}—${pb.name}`);
+}
 function setBlood(v){bloodFlag=v;
   document.querySelectorAll('#rBloodSeg button').forEach(b=>b.classList.toggle('on',parseInt(b.dataset.v)===v));}
 function setEmo(v){emoFlag=v;
@@ -923,6 +1084,7 @@ function openRel(id){
   const r=id?state.rels.find(x=>x.id===id):null;
   renderDimControls();
   populateCopySources(r);
+  populateTemplateSources(!id);
   document.getElementById('relTitle').textContent=id?'编辑关系':'新增关系';
   // 视角提示
   const sub=document.getElementById('relSub');
@@ -1199,8 +1361,10 @@ function renderGraph(){
     const id=g.dataset.id;
     g.querySelectorAll('circle')[g.querySelectorAll('circle').length-1].onclick=(e)=>{
       e.stopPropagation();selPerson=selPerson===id?null:id;switchTab('people');renderPeople();
+      if(isMobile()){const sb=document.getElementById('sidebar');sb.classList.add('sheet-open');const h=document.getElementById('sheetHandle');if(h)h.classList.add('hide');}
     };
     g.onmousedown=(e)=>startDrag(e,id);
+    g.addEventListener('touchstart',(e)=>startDrag(e,id),{passive:false});
   });
   const nb=document.getElementById('nowBar');
   if(curEvent){const ev=state.events.find(e=>e.id===curEvent);nb.style.display='block';
@@ -1208,14 +1372,25 @@ function renderGraph(){
   else{nb.style.display='none';nb.innerHTML='';}
 }
 let dragId=null;
+function evPoint(e){
+  if(e.touches&&e.touches.length)return{clientX:e.touches[0].clientX,clientY:e.touches[0].clientY};
+  if(e.changedTouches&&e.changedTouches.length)return{clientX:e.changedTouches[0].clientX,clientY:e.changedTouches[0].clientY};
+  return{clientX:e.clientX,clientY:e.clientY};
+}
 function svgPoint(e){const svg=document.getElementById('svg');const r=svg.getBoundingClientRect();
-  const vb=svg.viewBox.baseVal;return{x:(e.clientX-r.left)/r.width*vb.width,y:(e.clientY-r.top)/r.height*vb.height};}
+  const vb=svg.viewBox.baseVal;const pt=evPoint(e);
+  return{x:(pt.clientX-r.left)/r.width*vb.width,y:(pt.clientY-r.top)/r.height*vb.height};}
 function startDrag(e,id){e.preventDefault();dragId=id;const n=nodes.find(x=>x.id===id);if(n)n.dragging=true;
   document.getElementById('svg').classList.add('dragging');}
-document.addEventListener('mousemove',e=>{if(!dragId)return;const pt=svgPoint(e);
-  const n=nodes.find(x=>x.id===dragId);if(n){n.x=pt.x;n.y=pt.y;n.vx=0;n.vy=0;renderPositions();}});
-document.addEventListener('mouseup',()=>{if(dragId){const n=nodes.find(x=>x.id===dragId);if(n)n.dragging=false;}
-  dragId=null;document.getElementById('svg').classList.remove('dragging');});
+function moveDrag(e){if(!dragId)return;const pt=svgPoint(e);
+  const n=nodes.find(x=>x.id===dragId);if(n){n.x=pt.x;n.y=pt.y;n.vx=0;n.vy=0;renderPositions();}
+  if(e.cancelable)e.preventDefault();}
+function endDrag(){if(dragId){const n=nodes.find(x=>x.id===dragId);if(n)n.dragging=false;}
+  dragId=null;document.getElementById('svg').classList.remove('dragging');}
+document.addEventListener('mousemove',moveDrag);
+document.addEventListener('mouseup',endDrag);
+document.addEventListener('touchmove',moveDrag,{passive:false});
+document.addEventListener('touchend',endDrag);
 let settleFrames=0;   // 剩余布局帧数（仅载入/数据变化后自动排布用）
 function wakeLayout(frames){ settleFrames=Math.max(settleFrames, frames||90); ensureLoop(); }
 let looping=false;
@@ -1532,8 +1707,19 @@ function loadDemo(){
 }
 
 /* ---------- 启动 ---------- */
-load();applyScale();applyGraphScale();buildNodes();renderAll();wakeLayout(120);
-window.addEventListener('resize',()=>renderTimeline());
+function syncResponsive(){
+  const sb=document.getElementById('sidebar');
+  const h=document.getElementById('sheetHandle');
+  if(!sb)return;
+  if(isMobile()){
+    sb.classList.remove('collapsed');           // 移动端不用桌面收起态
+  }else{
+    sb.classList.remove('sheet-open');           // 桌面端不用抽屉态
+    if(h)h.classList.remove('hide');
+  }
+}
+load();applyScale();applyGraphScale();buildNodes();renderAll();syncResponsive();wakeLayout(120);
+window.addEventListener('resize',()=>{ renderTimeline(); syncResponsive(); wakeLayout(40); });
 </script>
 </body>
 </html>
