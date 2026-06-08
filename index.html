@@ -1438,9 +1438,16 @@ function evPoint(e){
   if(e.changedTouches&&e.changedTouches.length)return{clientX:e.changedTouches[0].clientX,clientY:e.changedTouches[0].clientY};
   return{clientX:e.clientX,clientY:e.clientY};
 }
-function svgPoint(e){const svg=document.getElementById('svg');const r=svg.getBoundingClientRect();
-  const vb=(svg.getAttribute('viewBox')||'0 0 1000 600').split(/\s+/).map(Number);const pt=evPoint(e);
-  return{x:vb[0]+(pt.clientX-r.left)/r.width*vb[2], y:vb[1]+(pt.clientY-r.top)/r.height*vb[3]};}
+function svgPoint(e){
+  const svg=document.getElementById('svg');
+  const pt=evPoint(e);
+  const sp=svg.createSVGPoint();
+  sp.x=pt.clientX; sp.y=pt.clientY;
+  const ctm=svg.getScreenCTM();
+  if(!ctm)return{x:0,y:0};
+  const r=sp.matrixTransform(ctm.inverse());
+  return{x:r.x,y:r.y};
+}
 function startPan(e){
   if(dragId)return;
   const pt=evPoint(e);
