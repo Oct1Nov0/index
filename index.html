@@ -1501,7 +1501,7 @@ function endDrag(){if(dragId){const n=nodes.find(x=>x.id===dragId);if(n)n.draggi
   dragId=null;panStart=null;document.getElementById('svg').classList.remove('dragging');}
 document.addEventListener('mousemove',moveDrag);
 document.addEventListener('mouseup',endDrag);
-document.addEventListener('touchmove',moveDrag,{passive:false});
+// document.addEventListener('touchmove',moveDrag,{passive:false});
 document.addEventListener('touchend',endDrag);
 let settleFrames=0;   // 剩余布局帧数（仅载入/数据变化后自动排布用）
 function wakeLayout(frames){ settleFrames=Math.max(settleFrames, frames||90); ensureLoop(); }
