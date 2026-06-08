@@ -293,7 +293,7 @@
     #viewHint{display:none}
 
     /* 主区改为纵向：图谱占满，侧栏变底部抽屉 */
-    .stage{flex-direction:column;height:calc(100vh - 50px - 44px - 96px);min-height:300px}
+    .stage{flex-direction:column;height:calc(100vh - 50px - 44px - 150px);min-height:300px}
     #graph{flex:1;width:100%}
 
     aside{position:fixed;left:0;right:0;bottom:0;width:auto;max-height:72vh;
@@ -317,14 +317,16 @@
     /* 底部唤出抽屉的标签按钮 */
     .sheet-tab{display:flex}
 
-    /* 事件轴压缩 */
-    .timeline{height:96px;padding-bottom:env(safe-area-inset-bottom,0)}
+    /* 事件轴：加高，容纳序号/圆点/名称/编辑按钮 */
+    .timeline{height:auto;min-height:140px;padding-bottom:env(safe-area-inset-bottom,0)}
     .tl-head{padding:6px 12px 2px;flex-wrap:wrap;gap:4px}
     .tl-head .hint{font-size:10px;flex:1 1 100%}
-    .tl-track-wrap{padding:0 12px 8px}
-    .tl-track{height:60px}
-    .ev .knob{margin-top:22px}
+    .tl-track-wrap{padding:0 12px 10px}
+    .tl-track{height:104px}
+    .tl-track .tl-line{top:21px}
+    .ev .knob{margin-top:14px}
     .ev .lab{max-width:70px}
+    .ev .ev-edit{margin-top:5px;padding:3px 12px;font-size:11px}
 
     /* 图谱缩放控件移到左上，避免和图例重叠 */
     .graph-zoom{top:8px!important;left:8px!important;right:auto!important}
