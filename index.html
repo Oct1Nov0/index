@@ -885,7 +885,9 @@ function toggleSidebar(){
   const sb=document.getElementById('sidebar');
   if(isMobile()){ toggleSheet(); return; }
   sb.classList.toggle('collapsed');
-  setTimeout(()=>{ if(typeof wakeLayout==='function') wakeLayout(40); },240);
+  const fix=()=>{ applyGraphScale(); if(typeof wakeLayout==='function') wakeLayout(40); };
+  sb.addEventListener('transitionend',fix,{once:true});
+  setTimeout(fix,300);
 }
 function toggleSheet(){
   const sb=document.getElementById('sidebar');
