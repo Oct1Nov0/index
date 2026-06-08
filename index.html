@@ -1441,8 +1441,9 @@ function evPoint(e){
 function svgPoint(e){
   const svg=document.getElementById('svg');
   const pt=evPoint(e);
+  const z=parseFloat(document.body.style.zoom)||1;
   const sp=svg.createSVGPoint();
-  sp.x=pt.clientX; sp.y=pt.clientY;
+  sp.x=pt.clientX/z; sp.y=pt.clientY/z;
   const ctm=svg.getScreenCTM();
   if(!ctm)return{x:0,y:0};
   const r=sp.matrixTransform(ctm.inverse());
@@ -1616,7 +1617,7 @@ document.querySelectorAll('.mask').forEach(m=>m.onclick=e=>{if(e.target===m)m.cl
 /* ---------- 缩放 ---------- */
 function applyScale(){
   // 用 zoom 等比缩放整个界面，对所有写死 px 的文字和控件都生效
-  // document.body.style.zoom = fontScale;
+  document.body.style.zoom = fontScale;
   // 兼容不支持 zoom 的浏览器，回退到 transform
   if(!('zoom' in document.body.style)){
     document.body.style.transform='scale('+fontScale+')';
