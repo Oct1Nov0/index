@@ -116,6 +116,9 @@
   .item.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
   .item .nm{font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px}
   .item .dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+  .item .dot.dot-male{border-radius:0;width:0;height:0;background:transparent!important;
+    border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:11px solid var(--gold)}
+  .item .dot.dot-female{border-radius:2px}
   .item .meta{font-size:11px;color:var(--ink-dim);margin-top:3px;line-height:1.4}
   .item .x{position:absolute;top:8px;right:9px;color:var(--ink-dim);font-size:15px;
     width:20px;height:20px;line-height:18px;text-align:center;border-radius:5px}
@@ -552,6 +555,15 @@
     <div><label>身份</label><input id="pRole" placeholder="如：长公子"></div>
     <div><label>节点颜色</label><input id="pColor" type="color" value="#c9a86a" style="height:36px;padding:3px"></div>
   </div>
+<div class="row">
+    <div><label>性别</label>
+      <div class="seg" id="pGenderSeg">
+        <button type="button" data-v="male" onclick="setGender('male')">男</button>
+        <button type="button" data-v="female" onclick="setGender('female')">女</button>
+        <button type="button" data-v="other" class="on" onclick="setGender('other')">其他</button>
+      </div>
+    </div>
+  </div>
   <label>性格 / 当前状态</label>
   <textarea id="pNote" placeholder="如：表面温和，内里多疑。第三卷后逐渐冷硬。"></textarea>
   <label>当前事件的人物状态线（按事件记录）</label>
@@ -669,7 +681,7 @@ view: 'truth' 或某个 personId
 let state={people:[],events:[],rels:[]};
 let curEvent=null, curView='truth', selPerson=null;
 let editingPerson=null, editingRel=null, editingEvent=null;
-let bloodFlag=0, emoFlag='neutral';
+let bloodFlag=0, emoFlag='neutral', genderFlag='other';
 let graphScale = 1;
 // 配色主题：每套主题给四类情感各一个基准色。深浅由强度自动算。
 const DEFAULT_THEMES=[
@@ -705,7 +717,7 @@ function normalizeLens(lens){
   Object.values(lens.vals).forEach(st=>{ if(st&&!st.dims)st.dims=dimsFromLegacy(st); });
 }
 function normalizeState(){
-  state.people=(state.people||[]).map(p=>({states:{},...p}));
+   state.people=(state.people||[]).map(p=>({states:{},gender:'other',...p}));
   state.events=state.events||[];
   state.rels=(state.rels||[]).map(r=>{
     r.truth=r.truth||{vals:{},notes:{},reasons:{}}; normalizeLens(r.truth);
@@ -903,10 +915,11 @@ function renderPeople(){
   if(!state.people.length){box.innerHTML='<div class="empty">还没有人物。<br>点下方按钮添加第一个角色。</div>';return;}
   box.innerHTML='';
   state.people.forEach(p=>{
-    const evState = curEvent && p.states ? p.states[curEvent] : '';
-    const d=document.createElement('div');
-    d.className='item'+(selPerson===p.id?' sel':'');
-    d.innerHTML=`<div class="nm"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</div>
+     const evState = curEvent && p.states ? p.states[curEvent] : '';
+     const d=document.createElement('div');
+     d.className='item'+(selPerson===p.id?' sel':'');
+     const gcls = p.gender==='male'?'dot-male':(p.gender==='female'?'dot-female':'');
+     d.innerHTML=`<div class="nm"><span class="dot ${gcls}" style="background:${p.color}"></span>${esc(p.name)}</div>
       ${p.role?`<div class="meta">${esc(p.role)}</div>`:''}
       ${p.note?`<div class="meta">${esc(p.note)}</div>`:''}
       ${evState?`<div class="meta"><b style="color:var(--gold)">当前事件状态：</b>${esc(evState)}</div>`:''}
@@ -923,13 +936,15 @@ function openPerson(id){
   document.getElementById('pColor').value=p?p.color:'#c9a86a';
   document.getElementById('pNote').value=p?p.note||'':'';
   document.getElementById('pState').value=p&&curEvent&&p.states?p.states[curEvent]||'':'';
+   setGender(p&&p.gender?p.gender:'other');
   openMask('personMask');
 }
 function savePerson(){
   const name=document.getElementById('pName').value.trim();
   if(!name){toast('请填写姓名');return;}
   const data={name,role:document.getElementById('pRole').value.trim(),
-    color:document.getElementById('pColor').value,note:document.getElementById('pNote').value.trim()};
+    color:document.getElementById('pColor').value,note:document.getElementById('pNote').value.trim(),
+    gender:genderFlag};
   const evState=document.getElementById('pState').value.trim();
   if(editingPerson){
     const p=personById(editingPerson);
@@ -1139,6 +1154,8 @@ function applyTemplate(){
 }
 function setBlood(v){bloodFlag=v;
   document.querySelectorAll('#rBloodSeg button').forEach(b=>b.classList.toggle('on',parseInt(b.dataset.v)===v));}
+function setGender(v){genderFlag=v;
+  document.querySelectorAll('#pGenderSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));}
 function setEmo(v){emoFlag=v;
   document.querySelectorAll('#emoSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   updateEmoPreview();}
@@ -1432,18 +1449,30 @@ function renderGraph(){
     if(lab)h+=`<rect x="${mx-lab.length*5.5-4}" y="${my-9}" width="${lab.length*11+8}" height="16" rx="4" fill="#1e1d24" opacity="0.85"/><text class="edge-label" x="${mx}" y="${my+3}">${esc(lab)}</text>`;
     if(diff)h+=`<text class="diff-note" x="${mx}" y="${my-16}">视角差异</text>`;
   });
-  nodes.forEach(n=>{
+nodes.forEach(n=>{
     const p=n.p;const isView = curView!=='truth' && curView===n.id;
+    let shape;
+    if(p.gender==='male'){
+      // 等边三角形，外接半径约 26
+      const r=26;
+      const p1=`0,${-r}`, p2=`${r*0.866},${r*0.5}`, p3=`${-r*0.866},${r*0.5}`;
+      shape=`<polygon points="${p1} ${p2} ${p3}" fill="${p.color}" stroke="#16151a" stroke-width="3"/>`;
+    }else if(p.gender==='female'){
+      // 正方形，边长约 40，居中
+      shape=`<rect x="-20" y="-20" width="40" height="40" rx="3" fill="${p.color}" stroke="#16151a" stroke-width="3"/>`;
+    }else{
+      shape=`<circle r="22" fill="${p.color}" stroke="#16151a" stroke-width="3"/>`;
+    }
     h+=`<g class="node${selPerson===n.id?' sel':''}" data-id="${n.id}" transform="translate(${n.x},${n.y})">
       <circle class="ring" r="30"/>
       ${isView?`<circle r="28" fill="none" stroke="var(--secret)" stroke-width="2" stroke-dasharray="3,3"/>`:''}
-      <circle r="22" fill="${p.color}" stroke="#16151a" stroke-width="3"/>
+      ${shape}
       <text y="40">${esc(p.name)}</text></g>`;
   });
   svg.innerHTML=h;
   svg.querySelectorAll('.node').forEach(g=>{
     const id=g.dataset.id;
-    g.querySelectorAll('circle')[g.querySelectorAll('circle').length-1].onclick=(e)=>{
+    g.onclick=(e)=>{
       e.stopPropagation();if(dragMoved){dragMoved=false;return;}selPerson=selPerson===id?null:id;switchTab('people');renderPeople();
       if(isMobile()){const sb=document.getElementById('sidebar');sb.classList.add('sheet-open');const h=document.getElementById('sheetHandle');if(h)h.classList.add('hide');}
     };
