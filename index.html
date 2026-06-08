@@ -257,7 +257,7 @@
   /* ============ 移动端：手机竖屏 ============ */
   @media (max-width:680px){
     body{overflow:hidden;height:100%}
-    #app{height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch}
+    #app{height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:260px}
     html{height:auto}
     /* 顶栏：标题缩小，操作按钮区横向可滚 */
     header{height:auto;min-height:50px;flex-wrap:wrap;gap:8px;padding:8px 12px}
@@ -301,7 +301,7 @@
     .sheet-tab{display:flex}
 
     /* 事件轴压缩 */
-    .timeline{height:96px;padding-bottom:env(safe-area-inset-bottom,0);margin-bottom:260px}
+    .timeline{height:96px;padding-bottom:env(safe-area-inset-bottom,0)}
     .tl-head{padding:6px 12px 2px;flex-wrap:wrap;gap:4px}
     .tl-head .hint{font-size:10px;flex:1 1 100%}
     .tl-track-wrap{padding:0 12px 8px}
