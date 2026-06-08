@@ -870,6 +870,12 @@ function switchTab(t){
   if(t==='chart') initChartSelectors();
   if(t==='events') renderEventCards();
   if(t==='arc') initArcView();
+  if(isMobile()){
+    const sb=document.getElementById('sidebar');
+    sb.classList.add('sheet-open');
+    const sh=document.getElementById('sheetHandle');
+    if(sh)sh.classList.add('hide');
+  }
 }
 function isMobile(){ return window.matchMedia('(max-width:680px)').matches; }
 function toggleSidebar(){
@@ -1562,6 +1568,13 @@ function startPan(e){
   },{passive:false});
   svg.addEventListener('touchend',e=>{ if(e.touches.length<2)pinchDist=null; });
 })();
+(function shieldControls(){
+  ['graph-zoom','legend'].forEach(cls=>{
+    document.querySelectorAll('.'+cls).forEach(el=>{
+      el.addEventListener('touchstart',e=>e.stopPropagation(),{passive:false});
+    });
+  });
+})();
 function startDrag(e,id){e.preventDefault();e.stopPropagation();dragId=id;dragMoved=false;const n=nodes.find(x=>x.id===id);if(n)n.dragging=true;
   document.getElementById('svg').classList.add('dragging');}
 function moveDrag(e){if(!dragId){if(!panStart)return;const svg=document.getElementById('svg');const r=svg.getBoundingClientRect();const pt=evPoint(e);const vb=panStart.vb;const dx=(pt.clientX-panStart.x)/r.width*vb[2];const dy=(pt.clientY-panStart.y)/r.height*vb[3];svg.setAttribute('viewBox',`${vb[0]-dx} ${vb[1]-dy} ${vb[2]} ${vb[3]}`);if(e.cancelable)e.preventDefault();return;}dragMoved=true;const pt=svgPoint(e);
@@ -1743,24 +1756,28 @@ function toggleLegend(e){
   const lg=document.getElementById('legend');
   if(!bar||!lg)return;
   let sx,sy,ox,oy,dragging=false;
-  bar.addEventListener('mousedown',e=>{
-    if(e.target.id==='legendMin')return;
+  function start(clientX,clientY,target){
+    if(target&&target.id==='legendMin')return;
     dragging=true;
     const sc=document.body.style.zoom?parseFloat(document.body.style.zoom):1;
     const r=lg.getBoundingClientRect();
     const pr=lg.parentElement.getBoundingClientRect();
     ox=(r.left-pr.left)/sc; oy=(r.top-pr.top)/sc;
-    sx=e.clientX; sy=e.clientY;
+    sx=clientX; sy=clientY;
     lg.style.bottom='auto'; lg.style.left=ox+'px'; lg.style.top=oy+'px';
-    e.preventDefault();
-  });
-  document.addEventListener('mousemove',e=>{
+  }
+  function move(clientX,clientY){
     if(!dragging)return;
     const sc=document.body.style.zoom?parseFloat(document.body.style.zoom):1;
-    const nx=ox+(e.clientX-sx)/sc, ny=oy+(e.clientY-sy)/sc;
+    const nx=ox+(clientX-sx)/sc, ny=oy+(clientY-sy)/sc;
     lg.style.left=Math.max(0,nx)+'px'; lg.style.top=Math.max(0,ny)+'px';
-  });
+  }
+  bar.addEventListener('mousedown',e=>{ start(e.clientX,e.clientY,e.target); e.preventDefault(); });
+  document.addEventListener('mousemove',e=>move(e.clientX,e.clientY));
   document.addEventListener('mouseup',()=>{dragging=false;});
+  bar.addEventListener('touchstart',e=>{ const t=e.touches[0]; start(t.clientX,t.clientY,e.target); e.preventDefault(); e.stopPropagation(); },{passive:false});
+  document.addEventListener('touchmove',e=>{ if(!dragging)return; const t=e.touches[0]; move(t.clientX,t.clientY); e.preventDefault(); },{passive:false});
+  document.addEventListener('touchend',()=>{dragging=false;});
 })();
 
 /* ---------- 配色主题 ---------- */
