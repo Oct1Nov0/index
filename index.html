@@ -256,8 +256,8 @@
 
   /* ============ 移动端：手机竖屏 ============ */
   @media (max-width:680px){
-    body{overflow:hidden;height:100%}
-    #app{height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:260px}
+    body{overflow:auto;-webkit-overflow-scrolling:touch}
+    #app{min-height:100%}
     html{height:auto}
     /* 顶栏：标题缩小，操作按钮区横向可滚 */
     header{height:auto;min-height:50px;flex-wrap:wrap;gap:8px;padding:8px 12px}
@@ -1858,12 +1858,24 @@ function syncResponsive(){
   }
 }
 load();applyScale();applyGraphScale();buildNodes();renderAll();syncResponsive();wakeLayout(120);
+setTimeout(padBottomSpace,150);
+window.addEventListener('resize',padBottomSpace);
 window.addEventListener('resize',()=>{ renderTimeline(); applyGraphScale(); syncResponsive(); wakeLayout(40); });
+
+function padBottomSpace(){
+  if(!window.matchMedia('(max-width:680px)').matches)return;
+  const app=document.getElementById('app');
+  if(!app)return;
+  // 用真实像素，给内容底部留出约一屏的可滚空间
+  app.style.minHeight=(window.innerHeight + 400)+'px';
+}
+
 function startApp(){
   document.getElementById('welcomePage').remove();
   applyGraphScale();
   renderGraph();
   wakeLayout(120);
+  padBottomSpace();
 }
 </script>
 </div>
