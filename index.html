@@ -1449,13 +1449,8 @@ function startPan(e){
 (function bindWheelPinch(){
   const svg=document.getElementById('svg');
   if(!svg)return;
-  // 鼠标滚轮缩放
-  svg.addEventListener('wheel',e=>{
-    e.preventDefault();
-    graphScale=Math.max(0.45,Math.min(2.4,+(graphScale-e.deltaY*0.001).toFixed(3)));
-    applyGraphScale();save();
-  },{passive:false});
-  // 双指捏合缩放
+  // 单指：平移（双指时不触发）
+  svg.addEventListener('mousedown',startPan);
   let pinchDist=null;
   svg.addEventListener('touchstart',e=>{
     if(e.touches.length===2){
@@ -1463,8 +1458,18 @@ function startPan(e){
       const dx=e.touches[0].clientX-e.touches[1].clientX;
       const dy=e.touches[0].clientY-e.touches[1].clientY;
       pinchDist=Math.sqrt(dx*dx+dy*dy);
+    }else if(e.touches.length===1){
+      pinchDist=null;
+      startPan(e);
     }
   },{passive:false});
+  // 鼠标滚轮缩放
+  svg.addEventListener('wheel',e=>{
+    e.preventDefault();
+    graphScale=Math.max(0.45,Math.min(2.4,+(graphScale-e.deltaY*0.001).toFixed(3)));
+    applyGraphScale();save();
+  },{passive:false});
+  // 双指捏合缩放
   svg.addEventListener('touchmove',e=>{
     if(e.touches.length===2&&pinchDist){
       e.preventDefault();
